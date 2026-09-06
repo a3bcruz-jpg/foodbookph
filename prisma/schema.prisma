@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  RESTAURANT_OWNER
+  ADMIN
+}
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+enum MembershipRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  username String @unique
+  displayName String
+  avatarUrl String?
+  bio String?
+  passwordHash String
+  status AccountStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profile Profile?
+  sessions Session[]
+  roles UserRole[]
+  claims RestaurantClaim[]
+  memberships RestaurantMembership[]
+  posts Post[]
+  likes Like[]
+  saves SavedPost[]
+  comments Comment[]
+  follows Follow[]
+  reviews Review[]
+  reviewResponses ReviewResponse[]
+  notifications Notification[]
+  reports Report[]
+}
+model Session {
+  id String @id @default(cuid())
+  userId String
+  tokenHash String @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+model Profile {
+  id String @id @default(cuid())
+  userId String @unique
+  displayName String
+  handle String @unique
+  bio String?
+  avatarUrl String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model UserRole {
+  id String @id @default(cuid())
+  userId String
+  role Role
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, role])
+}
+model Restaurant {
+  id String @id @default(cuid())
+  name String
+  slug String @unique
+  description String?
+  cuisine String
+  address String
+  city String
+  latitude Float?
+  longitude Float?
+  phone String?
+  website String?
+  isClaimed Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  claims RestaurantClaim[]
+  memberships RestaurantMembership[]
+  photos RestaurantPhoto[]
+  menus Menu[]
+  posts Post[]
+  follows Follow[]
+  reviews Review[]
+  @@index([name])
+  @@index([city, cuisine])
+}
+model RestaurantClaim {
+  id String @id @default(cuid())
+  restaurantId String
+  userId String
+  status ClaimStatus @default(PENDING)
+  proofNote String?
+  reviewedAt DateTime?
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([restaurantId, status])
+}
+model RestaurantMembership {
+  id String @id @default(cuid())
+  restaurantId String
+  userId String
+  role MembershipRole
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([restaurantId, userId])
+}
+model RestaurantPhoto {
+  id String @id @default(cuid())
+  restaurantId String
+  url String
+  alt String?
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+}
+model Menu {
+  id String @id @default(cuid())
+  restaurantId String
+  name String
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items MenuItem[]
+}
+model MenuItem {
+  id String @id @default(cuid())
+  menuId String
+  name String
+  description String?
+  price Decimal?
+  menu Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+}
+model Post {
+  id String @id @default(cuid())
+  authorId String?
+  restaurantId String?
+  caption String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  media PostMedia[]
+  likes Like[]
+  saves SavedPost[]
+  comments Comment[]
+  reports Report[]
+  @@index([createdAt])
+  @@index([authorId, createdAt])
+}
+model PostMedia {
+  id String @id @default(cuid())
+  postId String
+  url String
+  alt String?
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+model Like {
+  id String @id @default(cuid())
+  userId String
+  postId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+}
+model SavedPost {
+  id String @id @default(cuid())
+  userId String
+  postId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+  @@index([userId, createdAt])
+}
+model Comment {
+  id String @id @default(cuid())
+  userId String
+  postId String
+  body String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+model Follow {
+  id String @id @default(cuid())
+  userId String
+  restaurantId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  @@unique([userId, restaurantId])
+}
+model Review {
+  id String @id @default(cuid())
+  userId String
+  restaurantId String
+  rating Int
+  body String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  response ReviewResponse?
+  @@unique([userId, restaurantId])
+  @@index([restaurantId, createdAt])
+}
+model ReviewResponse {
+  id String @id @default(cuid())
+  reviewId String @unique
+  ownerId String
+  body String
+  createdAt DateTime @default(now())
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+}
+model Notification {
+  id String @id @default(cuid())
+  userId String
+  type String
+  message String
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model Report {
+  id String @id @default(cuid())
+  reporterId String
+  postId String?
+  reviewId String?
+  reason String
+  status ReportStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  reporter User @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  post Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+}

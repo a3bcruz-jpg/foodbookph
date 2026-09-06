@@ -1,0 +1,6 @@
+import { NextResponse } from "next/server";
+import { getCurrentAccount } from "@/lib/session";
+import { createRestaurant, listRestaurants } from "@/lib/content-repository";
+
+export async function GET(request: Request) { const query = new URL(request.url).searchParams.get("q") ?? ""; return NextResponse.json({ restaurants: await listRestaurants(query) }); }
+export async function POST(request: Request) { const account = await getCurrentAccount(); if (!account) return NextResponse.json({ error: "Authentication required." }, { status: 401 }); if (!account.roles.includes("ADMIN") && !account.roles.includes("RESTAURANT_OWNER")) return NextResponse.json({ error: "Restaurant management permission required." }, { status: 403 }); const body = await request.json() as Record<string, unknown>; const values = ["name", "cuisine", "address", "city", "slug"]; if (values.some((field) => typeof body[field] !== "string" || !(body[field] as string).trim())) return NextResponse.json({ error: "Name, cuisine, address, city, and slug are required." }, { status: 400 }); try { return NextResponse.json({ restaurant: await createRestaurant(body as { name: string; cuisine: string; address: string; city: string; slug: string }) }, { status: 201 }); } catch { return NextResponse.json({ error: "Unable to create restaurant." }, { status: 409 }); } }
