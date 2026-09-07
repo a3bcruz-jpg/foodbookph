@@ -760,7 +760,7 @@ function RestaurantCard({ restaurant, following, toggleFollow, reviews, onReview
       <div className="restaurant-details">
         <div className="restaurant-title">
           <div>
-            <h3>{restaurant.name}</h3>
+            <h3><Link href={`/restaurants/${restaurant.id}`}>{restaurant.name}</Link></h3>
             <p>{restaurant.cuisine}</p>
           </div>
           <span className="rating">
@@ -844,6 +844,9 @@ function RestaurantCard({ restaurant, following, toggleFollow, reviews, onReview
             <button className="outline-button small" onClick={() => onReview(restaurant.id)}>
               Write review
             </button>
+            <Link className="outline-button small" href={`/restaurants/${restaurant.id}`}>
+              View menu
+            </Link>
             <button onClick={() => toggleFollow(restaurant.id)} className={following ? "following" : "follow-button"}>
               {following ? "Following" : "Follow"}
             </button>
