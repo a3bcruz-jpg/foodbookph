@@ -29,7 +29,22 @@ export async function updateRestaurant(id: string, input: { name?: string; descr
 export async function listPosts(userId?: string) {
   const prisma = getPrisma();
   if (!prisma) return localPosts.map((post) => ({ ...post, liked: userId ? false : post.liked, saved: userId ? false : post.saved }));
-  const rows = await prisma.post.findMany({ orderBy: { createdAt: "desc" }, take: 50, include: { author: true, restaurant: true, media: { take: 1 }, _count: { select: { likes: true, comments: true } }, ...(userId ? { likes: { where: { userId }, select: { id: true } }, saves: { where: { userId }, select: { id: true } } } : {}) });
+  const rows = await prisma.post.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    include: {
+      author: true,
+      restaurant: true,
+      media: { take: 1 },
+      _count: { select: { likes: true, comments: true } },
+      ...(userId
+        ? {
+            likes: { where: { userId }, select: { id: true } },
+            saves: { where: { userId }, select: { id: true } },
+          }
+        : {}),
+    },
+  });
   return rows.map((post) => ({ id: post.id, author: post.author?.displayName ?? "FoodBook member", handle: post.author ? `@${post.author.username}` : "@foodbookph", avatar: post.author?.displayName.slice(0, 2).toUpperCase() ?? "FB", time: post.createdAt.toISOString(), caption: post.caption, image: post.media[0]?.url ?? "", place: post.restaurant ? `${post.restaurant.name} · ${post.restaurant.city}` : "Your food diary", likes: post._count.likes, comments: post._count.comments, liked: "likes" in post && post.likes.length > 0, saved: "saves" in post && post.saves.length > 0 }));
 }
 

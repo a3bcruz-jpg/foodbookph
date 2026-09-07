@@ -15,7 +15,14 @@ export const localSaves = store.saves;
 export function key(userId: string, entityId: string) { return `${userId}:${entityId}`; }
 export function toggleSet(collection: Set<string>, value: string, enabled: boolean) { if (enabled) collection.add(value); else collection.delete(value); return enabled; }
 export function createLocalPost(input: { authorId: string; caption: string; image: string; restaurantId?: string }) { const post: Post = { id: `p_${randomBytes(8).toString("hex")}`, author: "FoodBook member", handle: "@member", avatar: "FB", time: "just now", caption: input.caption, image: input.image, place: input.restaurantId ?? "Your food diary", likes: 0, comments: 0, liked: false, saved: false }; store.posts.unshift(post); return post; }
-export function addLocalReview(restaurantId: string, userId: string, rating: number, body: string) { const reviews = store.reviews.get(restaurantId) ?? []; if (reviews.some((review) => review.userId === userId)) throw new Error("You have already reviewed this restaurant."); const review = { id: `rev_${randomBytes(8).toString("hex")}`, userId, restaurantId, rating, body, createdAt: new Date().toISOString() }; reviews.unshift(review); store.reviews.set(restaurantId, reviews); return review; }
+export function addLocalReview(restaurantId: string, userId: string, rating: number, body: string) {
+	const reviews: { id: string; userId: string; restaurantId: string; rating: number; body: string; createdAt: string }[] = store.reviews.get(restaurantId) ?? [];
+	if (reviews.some((review) => review.userId === userId)) throw new Error("You have already reviewed this restaurant.");
+	const review = { id: `rev_${randomBytes(8).toString("hex")}`, userId, restaurantId, rating, body, createdAt: new Date().toISOString() };
+	reviews.unshift(review);
+	store.reviews.set(restaurantId, reviews);
+	return review;
+}
 export function localReviewList(restaurantId: string) { return store.reviews.get(restaurantId) ?? []; }
 export function localRestaurant(id: string): Restaurant | null { return localRestaurants.find((restaurant) => restaurant.id === id) ?? null; }
 export function localPost(id: string) { return store.posts.find((post) => post.id === id) ?? null; }
