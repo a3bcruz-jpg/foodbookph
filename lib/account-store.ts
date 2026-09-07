@@ -2,6 +2,13 @@ import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 export type AccountStatus = "ACTIVE" | "SUSPENDED";
 export type AccountRole = "CUSTOMER" | "ADMIN" | "RESTAURANT_OWNER" | "RESTAURANT_MANAGER" | "CREATOR";
+export type AccountRoleInput = "CUSTOMER" | "RESTAURANT_OWNER" | "ADMIN";
+
+export function normalizeAccountRole(role?: string | null): AccountRoleInput {
+  const normalized = typeof role === "string" ? role.trim().toUpperCase() : "";
+  return normalized === "RESTAURANT_OWNER" ? "RESTAURANT_OWNER" : "CUSTOMER";
+}
+
 export type Account = {
   id: string;
   email: string;
@@ -29,13 +36,14 @@ export function hashPassword(password: string) { const salt = randomBytes(16).to
 export function verifyPassword(password: string, storedHash: string) { const [salt, key] = storedHash.split(":"); if (!salt || !key) return false; const derived = scryptSync(password, salt, 64); const expected = Buffer.from(key, "hex"); return expected.length === derived.length && timingSafeEqual(expected, derived); }
 export function publicAccount(account: Account): PublicAccount { const { passwordHash: _passwordHash, ...safeAccount } = account; return safeAccount; }
 
-export function createAccount(input: { email: string; password: string; username: string; displayName: string }) {
+export function createAccount(input: { email: string; password: string; username: string; displayName: string; role?: AccountRoleInput }) {
   const email = normalizeEmail(input.email);
   const username = normalizeUsername(input.username);
   if (store.accounts.some((account) => account.email === email)) throw new Error("An account with that email already exists.");
   if (store.accounts.some((account) => account.username === username)) throw new Error("That username is already taken.");
   const now = new Date().toISOString();
-  const account: Account = { id: `usr_${randomBytes(10).toString("hex")}`, email, username, displayName: input.displayName.trim(), avatar: null, bio: "", passwordHash: hashPassword(input.password), createdAt: now, updatedAt: now, status: "ACTIVE", roles: ["CUSTOMER"] };
+  const role = normalizeAccountRole(input.role);
+  const account: Account = { id: `usr_${randomBytes(10).toString("hex")}`, email, username, displayName: input.displayName.trim(), avatar: null, bio: "", passwordHash: hashPassword(input.password), createdAt: now, updatedAt: now, status: "ACTIVE", roles: [role] };
   store.accounts.push(account);
   return account;
 }
