@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-export function AuthForm({ mode }: { mode: "login" | "register" }) {
+export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "register"; audience?: "customer" | "owner" }) {
   const router = useRouter();
   const [values, setValues] = useState({
     email: "",
@@ -29,13 +29,14 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      const data = await response.json() as { error?: string };
+      const data = await response.json() as { error?: string; account?: { roles?: string[] } };
       if (!response.ok) {
         setError(data.error ?? "Something went wrong.");
         return;
       }
       setSuccess(isRegister ? "Your FoodBookPH account is ready." : "Welcome back.");
-      setTimeout(() => router.push("/profile"), 350);
+      const destination = data.account?.roles?.includes("RESTAURANT_OWNER") ? "/owner" : "/profile";
+      setTimeout(() => router.push(destination), 350);
     } catch {
       setError("We could not reach FoodBookPH. Try again.");
     } finally {
@@ -60,9 +61,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
       <section className="auth-panel">
         <div className="auth-form-wrap">
-          <span className="eyebrow">{isRegister ? "JOIN THE COMMUNITY" : "WELCOME BACK"}</span>
-          <h2>{isRegister ? "Make yourself at home." : "Pick up where you left off."}</h2>
-          <p className="auth-subtitle">{isRegister ? "Create one identity for every food story ahead." : "Sign in to keep your food circle close."}</p>
+          <span className="eyebrow">{isRegister ? "JOIN THE COMMUNITY" : audience === "owner" ? "RESTAURANT OWNER LOGIN" : "WELCOME BACK"}</span>
+          <h2>{isRegister ? "Make yourself at home." : audience === "owner" ? "Welcome back to your restaurant." : "Pick up where you left off."}</h2>
+          <p className="auth-subtitle">{isRegister ? "Create one identity for every food story ahead." : audience === "owner" ? "Sign in to manage your place on FoodBookPH." : "Sign in to keep your food circle close."}</p>
 
           <form onSubmit={submit} noValidate>
             {isRegister && (

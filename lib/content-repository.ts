@@ -11,7 +11,7 @@ export async function listRestaurants(query = "") {
 export async function getRestaurant(id: string) {
   const prisma = getPrisma();
   if (!prisma) return localRestaurant(id);
-  return prisma.restaurant.findUnique({ where: { id }, include: { _count: { select: { reviews: true } } } });
+  return prisma.restaurant.findUnique({ where: { id }, include: { _count: { select: { reviews: true } }, menus: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], include: { items: { where: { isAvailable: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } } } } });
 }
 
 export async function createRestaurant(input: { name: string; cuisine: string; address: string; city: string; slug: string }) {

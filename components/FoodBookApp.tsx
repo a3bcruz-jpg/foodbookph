@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -20,7 +20,7 @@ import {
   Utensils,
   X,
 } from "lucide-react";
-import { currentUser, posts as seedPosts, restaurants } from "@/lib/data";
+import { posts as seedPosts, restaurants } from "@/lib/data";
 import type { Post } from "@/lib/data";
 
 type View = "home" | "discover" | "restaurants" | "food" | "profile";
@@ -80,6 +80,9 @@ type ReviewDraft = {
   wentWell: string;
   couldImprove: string;
 };
+
+type Viewer = { name: string; handle: string; initials: string; posts: number; reviews: number; following: number; isOwner: boolean };
+const anonymousViewer: Viewer = { name: "Your profile", handle: "", initials: "?", posts: 0, reviews: 0, following: 0, isOwner: false };
 
 const reviewSeed: Record<string, RestaurantReview[]> = {
   r1: [
@@ -200,6 +203,7 @@ const emptyReviewDraft = (): ReviewDraft => ({
 });
 
 export function FoodBookApp() {
+  const [viewer, setViewer] = useState<Viewer>(anonymousViewer);
   const [view, setView] = useState<View>("home");
   const [query, setQuery] = useState("");
   const [posts, setPosts] = useState(seedPosts);
@@ -210,6 +214,16 @@ export function FoodBookApp() {
   const [reportTarget, setReportTarget] = useState<{ restaurantId: string; reviewId: string } | null>(null);
   const [ownerResponseTarget, setOwnerResponseTarget] = useState<{ restaurantId: string; reviewId: string } | null>(null);
   const [restaurantReviews, setRestaurantReviews] = useState<Record<string, RestaurantReview[]>>(reviewSeed);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then(async (response) => response.ok ? response.json() as Promise<{ account: { displayName: string; username: string; roles: string[] } }> : null)
+      .then((data) => {
+        if (!data?.account) return;
+        setViewer((current) => ({ ...current, name: data.account.displayName, handle: `@${data.account.username}`, initials: data.account.displayName.slice(0, 2).toUpperCase(), isOwner: data.account.roles.includes("RESTAURANT_OWNER") || data.account.roles.includes("ADMIN") }));
+      })
+      .catch(() => undefined);
+  }, []);
 
   const filteredRestaurants = useMemo(
     () =>
@@ -250,7 +264,7 @@ export function FoodBookApp() {
   const addReview = (restaurantId: string, values: ReviewDraft) => {
     const nextReview: RestaurantReview = {
       id: `rev_${Date.now()}`,
-      userId: "u_current",
+      userId: viewer.handle || viewer.name,
       restaurantId,
       rating: clampMetric(values.rating),
       title: values.title.trim() || "Recent visit",
@@ -283,7 +297,7 @@ export function FoodBookApp() {
               ...review,
               ownerResponse: {
                 id: `resp_${Date.now()}`,
-                ownerId: "owner_current",
+                ownerId: viewer.handle || viewer.name,
                 body: body.trim(),
                 createdAt: new Date().toISOString(),
               },
@@ -306,7 +320,7 @@ export function FoodBookApp() {
                 {
                   id: `report_${Date.now()}`,
                   reviewId,
-                  reporterId: "u_current",
+                  reporterId: viewer.handle || viewer.name,
                   reason,
                   status: "OPEN",
                   createdAt: new Date().toISOString(),
@@ -348,9 +362,9 @@ export function FoodBookApp() {
               <Bell size={19} />
               <span className="notification-dot" />
             </button>
-            <Link className="profile-chip" href="/profile">
-              <span className="avatar avatar-small">{currentUser.initials}</span>
-              <span className="profile-chip-name">{currentUser.name}</span>
+              <Link className="profile-chip" href={viewer.isOwner ? "/owner" : "/profile"}>
+                <span className="avatar avatar-small">{viewer.initials}</span>
+                <span className="profile-chip-name">{viewer.name}</span>
             </Link>
           </div>
         </div>
@@ -362,7 +376,7 @@ export function FoodBookApp() {
             <NavButton icon={<Compass size={19} />} label="Discover" active={view === "discover"} onClick={() => setView("discover")} />
             <NavButton icon={<Store size={19} />} label="Restaurants" active={view === "restaurants"} onClick={() => setView("restaurants")} />
             <NavButton icon={<Utensils size={19} />} label="Food feed" active={view === "food"} onClick={() => setView("food")} />
-            <NavButton icon={<UserRound size={19} />} label="My profile" active={view === "profile"} onClick={() => setView("profile")} />
+            <NavButton icon={<UserRound size={19} />} label={viewer.isOwner ? "Owner dashboard" : "My profile"} active={view === "profile"} onClick={() => viewer.isOwner ? window.location.assign("/owner") : setView("profile")} />
           </nav>
           <div className="sidebar-rule" />
           <button
@@ -426,7 +440,7 @@ export function FoodBookApp() {
               onRespond={(restaurantId, reviewId) => setOwnerResponseTarget({ restaurantId, reviewId })}
             />
           )}{" "}
-          {view === "profile" && <ProfileView posts={posts} />}{" "}
+          {view === "profile" && <ProfileView posts={posts} viewer={viewer} />} {" "}
         </section>
         <aside className="right-rail">
           <div className="rail-card">
@@ -460,7 +474,7 @@ export function FoodBookApp() {
           <Plus size={24} />
         </button>
         <NavButton icon={<Utensils size={20} />} label="Food" active={view === "food"} onClick={() => setView("food")} />
-        <NavButton icon={<UserRound size={20} />} label="Profile" active={view === "profile"} onClick={() => setView("profile")} />
+        <NavButton icon={<UserRound size={20} />} label={viewer.isOwner ? "Owner" : "Profile"} active={view === "profile"} onClick={() => viewer.isOwner ? window.location.assign("/owner") : setView("profile")} />
       </nav>
       {showComposer && (
         <Composer
@@ -468,9 +482,9 @@ export function FoodBookApp() {
           onPublish={(caption, image) => {
             const newPost: Post = {
               id: `p${Date.now()}`,
-              author: currentUser.name,
-              handle: currentUser.handle,
-              avatar: currentUser.initials,
+              author: viewer.name,
+              handle: viewer.handle,
+              avatar: viewer.initials,
               time: "just now",
               caption,
               image,
@@ -526,7 +540,6 @@ function NavButton({ icon, label, active, onClick }: { icon: React.ReactNode; la
   return (
     <button className={`nav-button ${active ? "active" : ""}`} onClick={onClick}>
       {icon}
-      <span>{label}</span>
     </button>
   );
 }
@@ -856,29 +869,29 @@ function RestaurantMini({ restaurant }: { restaurant: (typeof restaurants)[numbe
   );
 }
 
-function ProfileView({ posts }: { posts: Post[] }) {
+function ProfileView({ posts, viewer }: { posts: Post[]; viewer: Viewer }) {
   return (
     <>
       <div className="profile-header">
-        <span className="profile-avatar">AC</span>
+        <span className="profile-avatar">{viewer.initials}</span>
         <div className="profile-copy">
           <span className="eyebrow">FOODBOOK MEMBER</span>
-          <h1>{currentUser.name}</h1>
-          <p>{currentUser.handle} · Quezon City</p>
+          <h1>{viewer.name}</h1>
+          <p>{viewer.handle ? `${viewer.handle} · Quezon City` : "Sign in to see your profile"}</p>
           <button className="outline-button">Edit profile</button>
         </div>
       </div>
       <div className="profile-stats">
         <div>
-          <strong>{currentUser.posts}</strong>
+          <strong>{viewer.posts}</strong>
           <span>posts</span>
         </div>
         <div>
-          <strong>{currentUser.reviews}</strong>
+          <strong>{viewer.reviews}</strong>
           <span>reviews</span>
         </div>
         <div>
-          <strong>{currentUser.following}</strong>
+          <strong>{viewer.following}</strong>
           <span>following</span>
         </div>
       </div>

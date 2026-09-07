@@ -103,6 +103,7 @@ model Restaurant {
   memberships RestaurantMembership[]
   photos RestaurantPhoto[]
   menus Menu[]
+  menuItems MenuItem[]
   posts Post[]
   follows Follow[]
   reviews Review[]
@@ -140,16 +141,29 @@ model Menu {
   id String @id @default(cuid())
   restaurantId String
   name String
+  description String?
+  sortOrder Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   items MenuItem[]
+  @@index([restaurantId, sortOrder])
 }
 model MenuItem {
   id String @id @default(cuid())
+  restaurantId String
   menuId String
   name String
   description String?
   price Decimal?
+  imageUrl String?
+  isAvailable Boolean @default(true)
+  sortOrder Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   menu Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  @@index([restaurantId, menuId, sortOrder])
 }
 model Post {
   id String @id @default(cuid())

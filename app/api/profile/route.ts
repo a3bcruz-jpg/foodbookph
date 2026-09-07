@@ -3,6 +3,12 @@ import { publicAccount } from "@/lib/account-store";
 import { updatePersistentAccount } from "@/lib/account-repository";
 import { getCurrentAccount } from "@/lib/session";
 
+export async function GET() {
+  const current = await getCurrentAccount();
+  if (!current) return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
+  return NextResponse.json({ account: current });
+}
+
 export async function PATCH(request: Request) {
   const current = await getCurrentAccount();
   if (!current) return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
