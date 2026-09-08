@@ -32,6 +32,17 @@ enum AccountStatus {
   ACTIVE
   SUSPENDED
 }
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELED
+}
+enum ProfileVisibility {
+  PUBLIC
+  CONNECTIONS
+  PRIVATE
+}
 
 model User {
   id String @id @default(cuid())
@@ -58,6 +69,15 @@ model User {
   reviewResponses ReviewResponse[]
   notifications Notification[]
   reports Report[]
+  privacy UserPrivacy?
+  sentFriendRequests FriendRequest[] @relation("FriendRequestSender")
+  receivedFriendRequests FriendRequest[] @relation("FriendRequestReceiver")
+  friendshipsA Friendship[] @relation("FriendshipA")
+  friendshipsB Friendship[] @relation("FriendshipB")
+  userFollows UserFollow[] @relation("UserFollowFollower")
+  followedByUsers UserFollow[] @relation("UserFollowFollowed")
+  blocksGiven Block[] @relation("Blocker")
+  blocksReceived Block[] @relation("Blocked")
 }
 model Session {
   id String @id @default(cuid())
@@ -83,6 +103,61 @@ model UserRole {
   role Role
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([userId, role])
+}
+model UserPrivacy {
+  id String @id @default(cuid())
+  userId String @unique
+  profileVisibility ProfileVisibility @default(PUBLIC)
+  discoverable Boolean @default(true)
+  showActivity Boolean @default(true)
+  allowFriendRequests Boolean @default(true)
+  allowFollows Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+model FriendRequest {
+  id String @id @default(cuid())
+  senderId String
+  receiverId String
+  status FriendRequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sender User @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status, createdAt])
+  @@index([senderId, status, createdAt])
+}
+model Friendship {
+  id String @id @default(cuid())
+  userAId String
+  userBId String
+  createdAt DateTime @default(now())
+  userA User @relation("FriendshipA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB User @relation("FriendshipB", fields: [userBId], references: [id], onDelete: Cascade)
+  @@unique([userAId, userBId])
+  @@index([userBId, createdAt])
+}
+model UserFollow {
+  id String @id @default(cuid())
+  followerId String
+  followedId String
+  createdAt DateTime @default(now())
+  follower User @relation("UserFollowFollower", fields: [followerId], references: [id], onDelete: Cascade)
+  followed User @relation("UserFollowFollowed", fields: [followedId], references: [id], onDelete: Cascade)
+  @@unique([followerId, followedId])
+  @@index([followedId, createdAt])
+}
+model Block {
+  id String @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
 }
 model Restaurant {
   id String @id @default(cuid())
@@ -215,7 +290,6 @@ model SavedPost {
   postId String
   createdAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@unique([userId, postId])
   @@index([userId, createdAt])
 }
@@ -251,7 +325,7 @@ model Review {
   @@index([restaurantId, createdAt])
 }
 model ReviewResponse {
-  id String @id @default(cuid())
+  id String @id @unique
   reviewId String @unique
   ownerId String
   body String
