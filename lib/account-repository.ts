@@ -12,7 +12,7 @@ export async function registerAccount(input: { email: string; password: string; 
   const existing = await prisma.user.findFirst({ where: { OR: [{ email: input.email.trim().toLowerCase() }, { username: input.username.trim().toLowerCase().replace(/^@/, "") }] } });
   if (existing) throw new Error(existing.email === input.email.trim().toLowerCase() ? "An account with that email already exists." : "That username is already taken.");
   const role = normalizeAccountRole(input.role);
-  const user = await prisma.user.create({ data: { email: input.email.trim().toLowerCase(), username: input.username.trim().toLowerCase().replace(/^@/, ""), displayName: input.displayName.trim(), passwordHash: (await import("@/lib/account-store")).hashPassword(input.password), roles: { create: { role } } }, include: { roles: true } });
+  const user = await prisma.user.create({ data: { email: input.email.trim().toLowerCase(), username: input.username.trim().toLowerCase().replace(/^@/, ""), displayName: input.displayName.trim(), passwordHash: (await import("@/lib/account-store")).hashPassword(input.password), roles: { create: { role } }, ...(role === "CUSTOMER" ? { privacy: { create: {} } } : {}) }, include: { roles: true } });
   return toAccount(user);
 }
 
