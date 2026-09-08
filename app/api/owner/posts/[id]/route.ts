@@ -3,12 +3,13 @@ import { deleteOwnerPost, updateOwnerPost } from "@/lib/owner-repository";
 import { getCurrentAccount } from "@/lib/session";
 
 type Context = { params: Promise<{ id: string }> };
+type OwnerAuth = { account: Awaited<ReturnType<typeof getCurrentAccount>>; response?: never } | { account: null; response: NextResponse };
 
-async function ownerAccount() {
+async function ownerAccount(): Promise<OwnerAuth> {
   const account = await getCurrentAccount();
-  if (!account) return { response: NextResponse.json({ error: "Authentication required." }, { status: 401 }) };
+  if (!account) return { account: null, response: NextResponse.json({ error: "Authentication required." }, { status: 401 }) };
   if (!account.roles.includes("RESTAURANT_OWNER") && !account.roles.includes("ADMIN")) {
-    return { response: NextResponse.json({ error: "Restaurant owner access required." }, { status: 403 }) };
+    return { account: null, response: NextResponse.json({ error: "Restaurant owner access required." }, { status: 403 }) };
   }
   return { account };
 }
