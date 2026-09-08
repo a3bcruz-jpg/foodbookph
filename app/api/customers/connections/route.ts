@@ -8,18 +8,19 @@ export async function GET() {
   const current = await getCurrentAccount();
   try {
     const prisma = await requireCustomer(current);
-    const [incoming, outgoing, friendships, follows] = await Promise.all([
+    const [incoming, outgoing, friendships, follows, blocks] = await Promise.all([
       prisma.friendRequest.findMany({ where: { receiverId: current!.id, status: "PENDING" }, orderBy: { createdAt: "desc" }, include: { sender: { select: customerSelect } } }),
       prisma.friendRequest.findMany({ where: { senderId: current!.id, status: "PENDING" }, orderBy: { createdAt: "desc" }, include: { receiver: { select: customerSelect } } }),
       prisma.friendship.findMany({ where: { OR: [{ userAId: current!.id }, { userBId: current!.id }] }, orderBy: { createdAt: "desc" }, include: { userA: { select: customerSelect }, userB: { select: customerSelect } } }),
       prisma.userFollow.findMany({ where: { followerId: current!.id }, orderBy: { createdAt: "desc" }, include: { followed: { select: customerSelect } } }),
+      prisma.block.findMany({ where: { blockerId: current!.id }, orderBy: { createdAt: "desc" }, include: { blocked: { select: customerSelect } } }),
     ]);
-
     return NextResponse.json({
       incoming: incoming.map((request) => ({ id: request.id, createdAt: request.createdAt, customer: publicCustomer(request.sender) })),
       outgoing: outgoing.map((request) => ({ id: request.id, createdAt: request.createdAt, customer: publicCustomer(request.receiver) })),
       friends: friendships.map((friendship) => publicCustomer(friendship.userAId === current!.id ? friendship.userB : friendship.userA)),
       following: follows.map((follow) => publicCustomer(follow.followed)),
+      blocked: blocks.map((block) => publicCustomer(block.blocked)),
     });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
@@ -35,10 +36,7 @@ export async function POST(request: Request) {
     const action = body.action;
     const targetUserId = body.targetUserId?.trim();
     if (!action) return NextResponse.json({ error: "Action is required." }, { status: 400 });
-
-    if (["friend-request", "follow", "block"].includes(action) && (!targetUserId || targetUserId === current!.id)) {
-      return NextResponse.json({ error: "A valid customer is required." }, { status: 400 });
-    }
+    if (["friend-request", "follow", "block"].includes(action) && (!targetUserId || targetUserId === current!.id)) return NextResponse.json({ error: "A valid customer is required." }, { status: 400 });
 
     if (action === "friend-request") {
       const target = await prisma.user.findFirst({ where: { id: targetUserId, status: "ACTIVE", roles: { some: { role: "CUSTOMER" } }, privacy: { is: { allowFriendRequests: true, discoverable: true } } }, select: { id: true, displayName: true } });
@@ -50,9 +48,7 @@ export async function POST(request: Request) {
       const reverse = await prisma.friendRequest.findUnique({ where: { senderId_receiverId: { senderId: target.id, receiverId: current!.id } } });
       if (reverse?.status === "PENDING") return NextResponse.json({ error: "This customer already sent you a request. Open Requests to accept it." }, { status: 409 });
       const existing = await prisma.friendRequest.findUnique({ where: { senderId_receiverId: { senderId: current!.id, receiverId: target.id } } });
-      const friendRequest = existing
-        ? await prisma.friendRequest.update({ where: { id: existing.id }, data: { status: "PENDING" } })
-        : await prisma.friendRequest.create({ data: { senderId: current!.id, receiverId: target.id } });
+      const friendRequest = existing ? await prisma.friendRequest.update({ where: { id: existing.id }, data: { status: "PENDING" } }) : await prisma.friendRequest.create({ data: { senderId: current!.id, receiverId: target.id } });
       await prisma.notification.create({ data: { userId: target.id, type: "FRIEND_REQUEST", message: `${current!.displayName} sent you a friend request.` } });
       return NextResponse.json({ ok: true, requestId: friendRequest.id });
     }
@@ -61,10 +57,7 @@ export async function POST(request: Request) {
       if (!body.requestId) return NextResponse.json({ error: "Request id is required." }, { status: 400 });
       const requestRow = await prisma.friendRequest.findFirst({ where: { id: body.requestId, receiverId: current!.id, status: "PENDING" } });
       if (!requestRow) return NextResponse.json({ error: "Friend request not found." }, { status: 404 });
-      if (action === "decline") {
-        await prisma.friendRequest.update({ where: { id: requestRow.id }, data: { status: "DECLINED" } });
-        return NextResponse.json({ ok: true });
-      }
+      if (action === "decline") { await prisma.friendRequest.update({ where: { id: requestRow.id }, data: { status: "DECLINED" } }); return NextResponse.json({ ok: true }); }
       const [userAId, userBId] = orderedPair(requestRow.senderId, requestRow.receiverId);
       await prisma.$transaction([
         prisma.friendRequest.update({ where: { id: requestRow.id }, data: { status: "ACCEPTED" } }),
@@ -88,9 +81,7 @@ export async function POST(request: Request) {
         const blocked = await prisma.block.findFirst({ where: { OR: [{ blockerId: current!.id, blockedId: target.id }, { blockerId: target.id, blockedId: current!.id }] } });
         if (blocked) return NextResponse.json({ error: "This connection is unavailable." }, { status: 403 });
         await prisma.userFollow.upsert({ where: { followerId_followedId: { followerId: current!.id, followedId: target.id } }, create: { followerId: current!.id, followedId: target.id }, update: {} });
-      } else {
-        await prisma.userFollow.deleteMany({ where: { followerId: current!.id, followedId: target.id } });
-      }
+      } else await prisma.userFollow.deleteMany({ where: { followerId: current!.id, followedId: target.id } });
       return NextResponse.json({ ok: true });
     }
 
@@ -111,7 +102,6 @@ export async function POST(request: Request) {
       await prisma.block.deleteMany({ where: { blockerId: current!.id, blockedId: targetUserId } });
       return NextResponse.json({ ok: true });
     }
-
     return NextResponse.json({ error: "Unsupported action." }, { status: 400 });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
