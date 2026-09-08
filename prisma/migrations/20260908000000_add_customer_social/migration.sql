@@ -68,3 +68,12 @@ ALTER TABLE "UserFollow" ADD CONSTRAINT "UserFollow_followerId_fkey" FOREIGN KEY
 ALTER TABLE "UserFollow" ADD CONSTRAINT "UserFollow_followedId_fkey" FOREIGN KEY ("followedId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Block" ADD CONSTRAINT "Block_blockerId_fkey" FOREIGN KEY ("blockerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Block" ADD CONSTRAINT "Block_blockedId_fkey" FOREIGN KEY ("blockedId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+INSERT INTO "UserPrivacy" ("id", "userId", "updatedAt")
+SELECT md5('privacy:' || u."id"), u."id", CURRENT_TIMESTAMP
+FROM "User" u
+WHERE EXISTS (
+  SELECT 1 FROM "UserRole" ur
+  WHERE ur."userId" = u."id" AND ur."role" = 'CUSTOMER'
+)
+ON CONFLICT ("userId") DO NOTHING;
