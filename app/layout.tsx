@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "./design-system.css";
 import "./account.css";
 import "./owner.css";
 import "./owner-menu.css";
 import "./restaurant.css";
 import "./navigation-fix.css";
+import "./design-system.css";
 
 export const metadata: Metadata = {
   title: "FoodBookPH | Discover food. Meet your food people.",
