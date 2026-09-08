@@ -1,8 +1,9 @@
 import { getPrisma } from "@/lib/prisma";
+import { isCustomerAccount } from "@/lib/account-role";
 
 export async function requireCustomer(account: { id: string; roles: string[] } | null) {
   if (!account) throw new Error("AUTH_REQUIRED");
-  if (!account.roles.includes("CUSTOMER")) throw new Error("CUSTOMER_ONLY");
+  if (!isCustomerAccount(account.roles)) throw new Error("CUSTOMER_ONLY");
   const prisma = getPrisma();
   if (!prisma) throw new Error("DATABASE_REQUIRED");
   return prisma;

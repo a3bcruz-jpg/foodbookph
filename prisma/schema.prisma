@@ -321,9 +321,25 @@ model Review {
   updatedAt DateTime @updatedAt
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  serviceRating ServiceRating?
   response ReviewResponse?
   @@unique([userId, restaurantId])
   @@index([restaurantId, createdAt])
+}
+model ServiceRating {
+  id String @id @default(cuid())
+  reviewId String @unique
+  foodQuality Int?
+  customerService Int?
+  staffFriendliness Int?
+  speedOfService Int?
+  cleanliness Int?
+  ambiance Int?
+  valueForMoney Int?
+  overallExperience Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
 model ReviewResponse {
   id String @id @default(cuid())

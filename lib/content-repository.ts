@@ -1,6 +1,19 @@
 import { getPrisma } from "@/lib/prisma";
 import { addLocalReview, createLocalPost, key, localFollows, localLikes, localPost, localRestaurant, localRestaurants, localReviewList, localPosts, localSaves, toggleSet } from "@/lib/content-store";
 
+export const SERVICE_RATING_FIELDS = [
+  "foodQuality",
+  "customerService",
+  "staffFriendliness",
+  "speedOfService",
+  "cleanliness",
+  "ambiance",
+  "valueForMoney",
+  "overallExperience",
+] as const;
+
+export type ServiceRatingsInput = Partial<Record<(typeof SERVICE_RATING_FIELDS)[number], number>>;
+
 export async function listRestaurants(query = "") {
   const prisma = getPrisma();
   if (!prisma) return localRestaurants.filter((item) => `${item.name} ${item.cuisine} ${item.location}`.toLowerCase().includes(query.toLowerCase()));
@@ -12,6 +25,29 @@ export async function getRestaurant(id: string) {
   const prisma = getPrisma();
   if (!prisma) return localRestaurant(id);
   return prisma.restaurant.findUnique({ where: { id }, include: { _count: { select: { reviews: true } }, menus: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], include: { items: { where: { isAvailable: true }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] } } } } });
+}
+
+export async function getRestaurantRatingSummary(restaurantId: string) {
+  const prisma = getPrisma();
+  if (!prisma) return { overall: null, count: 0, services: Object.fromEntries(SERVICE_RATING_FIELDS.map((field) => [field, null])) as Record<string, number | null> };
+  const [overall, services] = await Promise.all([
+    prisma.review.aggregate({ where: { restaurantId }, _avg: { rating: true }, _count: { _all: true } }),
+    prisma.serviceRating.aggregate({ where: { review: { restaurantId } }, _avg: { foodQuality: true, customerService: true, staffFriendliness: true, speedOfService: true, cleanliness: true, ambiance: true, valueForMoney: true, overallExperience: true } }),
+  ]);
+  return {
+    overall: overall._avg.rating,
+    count: overall._count._all,
+    services: {
+      foodQuality: services._avg.foodQuality,
+      customerService: services._avg.customerService,
+      staffFriendliness: services._avg.staffFriendliness,
+      speedOfService: services._avg.speedOfService,
+      cleanliness: services._avg.cleanliness,
+      ambiance: services._avg.ambiance,
+      valueForMoney: services._avg.valueForMoney,
+      overallExperience: services._avg.overallExperience,
+    },
+  };
 }
 
 export async function createRestaurant(input: { name: string; cuisine: string; address: string; city: string; slug: string }) {
@@ -57,5 +93,24 @@ export async function setFollow(userId: string, restaurantId: string, enabled: b
 export async function setLike(userId: string, postId: string, enabled: boolean) { const prisma = getPrisma(); if (!prisma) return toggleSet(localLikes, key(userId, postId), enabled); if (enabled) await prisma.like.upsert({ where: { userId_postId: { userId, postId } }, update: {}, create: { userId, postId } }); else await prisma.like.deleteMany({ where: { userId, postId } }); return enabled; }
 export async function setSave(userId: string, postId: string, enabled: boolean) { const prisma = getPrisma(); if (!prisma) return toggleSet(localSaves, key(userId, postId), enabled); if (enabled) await prisma.savedPost.upsert({ where: { userId_postId: { userId, postId } }, update: {}, create: { userId, postId } }); else await prisma.savedPost.deleteMany({ where: { userId, postId } }); return enabled; }
 
-export async function listReviews(restaurantId: string) { const prisma = getPrisma(); return prisma ? prisma.review.findMany({ where: { restaurantId }, orderBy: { createdAt: "desc" }, include: { user: { select: { displayName: true, username: true, avatarUrl: true } } } }) : localReviewList(restaurantId); }
-export async function createReview(input: { userId: string; restaurantId: string; rating: number; body: string }) { const prisma = getPrisma(); if (!prisma) return addLocalReview(input.restaurantId, input.userId, input.rating, input.body); return prisma.review.create({ data: input, include: { user: { select: { displayName: true, username: true } } } }); }
+export async function listReviews(restaurantId: string) {
+  const prisma = getPrisma();
+  return prisma
+    ? prisma.review.findMany({ where: { restaurantId }, orderBy: { createdAt: "desc" }, include: { user: { select: { displayName: true, username: true, avatarUrl: true } }, serviceRating: true } })
+    : localReviewList(restaurantId);
+}
+
+export async function createReview(input: { userId: string; restaurantId: string; rating: number; body: string; serviceRatings?: ServiceRatingsInput }) {
+  const prisma = getPrisma();
+  if (!prisma) return addLocalReview(input.restaurantId, input.userId, input.rating, input.body);
+  return prisma.review.create({
+    data: {
+      userId: input.userId,
+      restaurantId: input.restaurantId,
+      rating: input.rating,
+      body: input.body,
+      serviceRating: input.serviceRatings ? { create: input.serviceRatings } : undefined,
+    },
+    include: { user: { select: { displayName: true, username: true } }, serviceRating: true },
+  });
+}
