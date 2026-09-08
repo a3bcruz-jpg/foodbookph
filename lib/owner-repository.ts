@@ -17,70 +17,20 @@ function restaurantSlug(name: string) {
 export async function getOwnerDashboard(userId: string) {
   const prisma = getPrisma();
   if (!prisma) return null;
-  const membership = await prisma.restaurantMembership.findFirst({
-    where: { userId, role: { in: ["OWNER", "MANAGER"] } },
-    orderBy: { id: "asc" },
-    include: {
-      restaurant: {
-        include: {
-          _count: { select: { reviews: true, follows: true, posts: true } },
-          reviews: {
-            orderBy: { createdAt: "desc" },
-            take: 6,
-            include: { user: { select: { displayName: true } }, response: true },
-          },
-          posts: { orderBy: { createdAt: "desc" }, take: 4, include: { media: { take: 1 } } },
-          photos: { orderBy: { id: "asc" }, take: 12 },
-        },
-      },
-    },
-  });
+  const membership = await prisma.restaurantMembership.findFirst({ where: { userId, role: { in: ["OWNER", "MANAGER"] } }, orderBy: { id: "asc" }, include: { restaurant: { include: { _count: { select: { reviews: true, follows: true, posts: true } }, reviews: { orderBy: { createdAt: "desc" }, take: 6, include: { user: { select: { displayName: true } }, response: true } }, posts: { orderBy: { createdAt: "desc" }, take: 4, include: { media: { take: 1 } } }, photos: { orderBy: { id: "asc" }, take: 12 } } } });
   if (!membership) return null;
   const restaurant = membership.restaurant;
-  const averageRating = restaurant.reviews.length
-    ? restaurant.reviews.reduce((total, review) => total + review.rating, 0) / restaurant.reviews.length
-    : 0;
-  return {
-    restaurant: {
-      ...restaurant,
-      averageRating,
-      reviews: restaurant.reviews.map((review) => ({
-        id: review.id,
-        rating: review.rating,
-        body: review.body,
-        createdAt: review.createdAt.toISOString(),
-        reviewer: review.user.displayName,
-        response: review.response ? { body: review.response.body } : null,
-      })),
-      posts: restaurant.posts.map((post) => ({ id: post.id, caption: post.caption, createdAt: post.createdAt.toISOString(), image: post.media[0]?.url ?? "" })),
-      photos: restaurant.photos.map((photo) => ({ id: photo.id, url: photo.url, alt: photo.alt ?? restaurant.name })),
-    },
-    membershipRole: membership.role,
-  };
+  const averageRating = restaurant.reviews.length ? restaurant.reviews.reduce((total, review) => total + review.rating, 0) / restaurant.reviews.length : 0;
+  return { restaurant: { ...restaurant, averageRating, reviews: restaurant.reviews.map((review) => ({ id: review.id, rating: review.rating, body: review.body, createdAt: review.createdAt.toISOString(), reviewer: review.user.displayName, response: review.response ? { body: review.response.body } : null })), posts: restaurant.posts.map((post) => ({ id: post.id, caption: post.caption, createdAt: post.createdAt.toISOString(), image: post.media[0]?.url ?? "" })), photos: restaurant.photos.map((photo) => ({ id: photo.id, url: photo.url, alt: photo.alt ?? restaurant.name })) }, membershipRole: membership.role };
 }
 
 export async function createOwnedRestaurant(userId: string, input: OwnerRestaurantInput) {
   const prisma = getPrisma();
   if (!prisma) return null;
   return prisma.$transaction(async (transaction) => {
-    const existingMembership = await transaction.restaurantMembership.findFirst({
-      where: { userId, role: "OWNER" },
-      select: { restaurantId: true },
-    });
+    const existingMembership = await transaction.restaurantMembership.findFirst({ where: { userId, role: "OWNER" }, select: { restaurantId: true } });
     if (existingMembership) throw new Error("You already have a restaurant connected to this account.");
-    const restaurant = await transaction.restaurant.create({
-      data: {
-        name: input.name,
-        slug: restaurantSlug(input.name),
-        description: input.description,
-        cuisine: input.cuisine,
-        address: input.address,
-        city: input.city,
-        phone: input.phone,
-        website: input.website,
-        isClaimed: true,
-      },
-    });
+    const restaurant = await transaction.restaurant.create({ data: { name: input.name, slug: restaurantSlug(input.name), description: input.description, cuisine: input.cuisine, address: input.address, city: input.city, phone: input.phone, website: input.website, isClaimed: true } });
     await transaction.restaurantMembership.create({ data: { restaurantId: restaurant.id, userId, role: "OWNER" } });
     return restaurant;
   });
@@ -99,20 +49,13 @@ export async function submitRestaurantClaim(userId: string, restaurantId: string
   if (!prisma) return null;
   const restaurant = await prisma.restaurant.findUnique({ where: { id: restaurantId }, select: { id: true } });
   if (!restaurant) return null;
-  return prisma.restaurantClaim.upsert({
-    where: { id: `${userId}:${restaurantId}` },
-    update: { proofNote, status: "PENDING", reviewedAt: null },
-    create: { id: `${userId}:${restaurantId}`, userId, restaurantId, proofNote, status: "PENDING" },
-  });
+  return prisma.restaurantClaim.upsert({ where: { id: `${userId}:${restaurantId}` }, update: { proofNote, status: "PENDING", reviewedAt: null }, create: { id: `${userId}:${restaurantId}`, userId, restaurantId, proofNote, status: "PENDING" } });
 }
 
 export async function respondToReview(userId: string, reviewId: string, body: string) {
   const prisma = getPrisma();
   if (!prisma) return null;
-  const review = await prisma.review.findFirst({
-    where: { id: reviewId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } },
-    select: { id: true },
-  });
+  const review = await prisma.review.findFirst({ where: { id: reviewId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } }, select: { id: true } });
   if (!review) return null;
   return prisma.reviewResponse.upsert({ where: { reviewId }, update: { body }, create: { reviewId, ownerId: userId, body } });
 }
@@ -178,5 +121,40 @@ export async function deleteMenuItem(userId: string, itemId: string) {
   const prisma = getPrisma();
   if (!prisma) return false;
   const result = await prisma.menuItem.deleteMany({ where: { id: itemId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } } });
+  return result.count > 0;
+}
+
+export async function getOwnerPosts(userId: string) {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const restaurant = await ownedRestaurant(userId);
+  if (!restaurant) return null;
+  const posts = await prisma.post.findMany({ where: { restaurantId: restaurant.id }, orderBy: { createdAt: "desc" }, take: 50, include: { media: { take: 1 } } });
+  return posts.map((post) => ({ id: post.id, caption: post.caption, createdAt: post.createdAt.toISOString(), image: post.media[0]?.url ?? "" }));
+}
+
+export async function createOwnerPost(userId: string, input: { restaurantId: string; caption: string; image?: string }) {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const restaurant = await ownedRestaurant(userId, input.restaurantId);
+  if (!restaurant) return null;
+  return prisma.post.create({ data: { authorId: userId, restaurantId: restaurant.id, caption: input.caption, media: input.image ? { create: { url: input.image } } : undefined }, include: { media: { take: 1 } } });
+}
+
+export async function updateOwnerPost(userId: string, postId: string, caption: string, image: string) {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const post = await prisma.post.findFirst({ where: { id: postId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } }, select: { id: true } });
+  if (!post) return null;
+  return prisma.$transaction(async (transaction) => {
+    await transaction.postMedia.deleteMany({ where: { postId } });
+    return transaction.post.update({ where: { id: postId }, data: { caption, media: image ? { create: { url: image } } : undefined }, include: { media: { take: 1 } } });
+  });
+}
+
+export async function deleteOwnerPost(userId: string, postId: string) {
+  const prisma = getPrisma();
+  if (!prisma) return false;
+  const result = await prisma.post.deleteMany({ where: { id: postId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } } });
   return result.count > 0;
 }
