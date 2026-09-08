@@ -9,13 +9,16 @@ type Customer = { id: string; username: string; displayName: string; avatarUrl: 
 type CardCustomer = Customer & { relationship: "NONE" | "FRIENDS" | "REQUEST_SENT" | "REQUEST_RECEIVED"; following: boolean };
 type Account = { displayName: string; username: string; avatar: string | null };
 
+type ConnectionRequest = { id: string; customer: Customer };
+
 export function CustomerFriends({ account }: { account: Account }) {
-  const [tab, setTab] = useState<"discover" | "requests" | "friends" | "privacy">("discover");
+  const [tab, setTab] = useState<"discover" | "requests" | "friends" | "following" | "privacy">("discover");
   const [query, setQuery] = useState("");
   const [customers, setCustomers] = useState<CardCustomer[]>([]);
-  const [incoming, setIncoming] = useState<Array<{ id: string; customer: Customer }>>([]);
-  const [outgoing, setOutgoing] = useState<Array<{ id: string; customer: Customer }>>([]);
+  const [incoming, setIncoming] = useState<ConnectionRequest[]>([]);
+  const [outgoing, setOutgoing] = useState<ConnectionRequest[]>([]);
   const [friends, setFriends] = useState<Customer[]>([]);
+  const [following, setFollowing] = useState<Customer[]>([]);
   const [blocked, setBlocked] = useState<Customer[]>([]);
   const [privacy, setPrivacy] = useState({ profileVisibility: "PUBLIC", discoverable: true, showActivity: true, allowFriendRequests: true, allowFollows: true });
   const [message, setMessage] = useState("");
@@ -35,6 +38,7 @@ export function CustomerFriends({ account }: { account: Account }) {
     setIncoming(data.incoming ?? []);
     setOutgoing(data.outgoing ?? []);
     setFriends(data.friends ?? []);
+    setFollowing(data.following ?? []);
     setBlocked(data.blocked ?? []);
   };
 
@@ -85,6 +89,7 @@ export function CustomerFriends({ account }: { account: Account }) {
         <button className={tab === "discover" ? styles.active : ""} onClick={() => setTab("discover")}><Search size={16} /> Find customers</button>
         <button className={tab === "requests" ? styles.active : ""} onClick={() => setTab("requests")}><Clock3 size={16} /> Requests {incoming.length ? <b>{incoming.length}</b> : null}</button>
         <button className={tab === "friends" ? styles.active : ""} onClick={() => setTab("friends")}><Users size={16} /> Friends {friends.length ? <b>{friends.length}</b> : null}</button>
+        <button className={tab === "following" ? styles.active : ""} onClick={() => setTab("following")}><UserPlus size={16} /> Following {following.length ? <b>{following.length}</b> : null}</button>
         <button className={tab === "privacy" ? styles.active : ""} onClick={() => setTab("privacy")}><Shield size={16} /> Privacy</button>
       </nav>
 
@@ -102,13 +107,19 @@ export function CustomerFriends({ account }: { account: Account }) {
         <div><h2>Friend requests</h2><p>People who want to connect with you.</p></div>
         {incoming.map((request) => <div className={styles.row} key={request.id}><CustomerIdentity customer={request.customer} /><div className={styles.rowActions}><button className={styles.primary} onClick={() => action({ action: "accept", requestId: request.id })}><Check size={15} /> Accept</button><button className={styles.outline} onClick={() => action({ action: "decline", requestId: request.id })}><X size={15} /> Decline</button></div></div>)}
         {!incoming.length && <div className={styles.empty}><Clock3 size={28} /><h2>No pending requests</h2><p>You are all caught up.</p></div>}
-        {!!outgoing.length && <><div className={styles.divider} /><div><h2>Sent requests</h2><p>Requests waiting for a response.</p></div>{outgoing.map((request) => <div className={styles.row} key={request.id}><CustomerIdentity customer={request.customer} /><span className={styles.pending}>Pending</span></div>)}</>}
+        {!!outgoing.length && <><div className={styles.divider} /><div><h2>Sent requests</h2><p>Requests waiting for a response.</p></div>{outgoing.map((request) => <div className={styles.row} key={request.id}><CustomerIdentity customer={request.customer} /><div className={styles.rowActions}><span className={styles.pending}>Pending</span><button className={styles.outline} disabled={busy === `cancel-request:${request.id}`} onClick={() => action({ action: "cancel-request", requestId: request.id })}>Cancel</button></div></div>)}</>}
       </section>}
 
       {tab === "friends" && <section className={styles.stack}>
         <div><h2>Your food circle</h2><p>Customers you have connected with.</p></div>
         {friends.map((friend) => <div className={styles.row} key={friend.id}><CustomerIdentity customer={friend} /><div className={styles.rowActions}><Link className={styles.outline} href={`/customers/${friend.username}`}>View profile</Link><button className={styles.danger} onClick={() => action({ action: "remove-friend", targetUserId: friend.id })}><UserX size={15} /> Remove</button></div></div>)}
         {!friends.length && <div className={styles.empty}><Users size={28} /><h2>Your food circle is empty</h2><p>Find fellow customers and start building your community.</p><button className={styles.primary} onClick={() => setTab("discover")}><UserPlus size={15} /> Find customers</button></div>}
+      </section>}
+
+      {tab === "following" && <section className={styles.stack}>
+        <div><h2>People you follow</h2><p>Keep up with food activity from customers you follow.</p></div>
+        {following.map((person) => <div className={styles.row} key={person.id}><CustomerIdentity customer={person} /><div className={styles.rowActions}><Link className={styles.outline} href={`/customers/${person.username}`}>View profile</Link><button className={styles.outline} onClick={() => action({ action: "unfollow", targetUserId: person.id })}>Unfollow</button></div></div>)}
+        {!following.length && <div className={styles.empty}><UserPlus size={28} /><h2>You are not following anyone</h2><p>Follow customers whose food discoveries you want to see.</p><button className={styles.primary} onClick={() => setTab("discover")}><Search size={15} /> Find customers</button></div>}
       </section>}
 
       {tab === "privacy" && <section className={styles.privacy}>
@@ -134,7 +145,7 @@ function CustomerIdentity({ customer }: { customer: Customer }) {
 
 function CustomerCard({ customer, busy, onAction }: { customer: CardCustomer; busy: string | null; onAction: (payload: Record<string, string>) => Promise<void> }) {
   const key = (action: string) => `${action}:${customer.id}`;
-  return <article className={styles.card}><CustomerIdentity customer={customer} /><div className={styles.cardActions}>{customer.relationship === "FRIENDS" ? <span className={styles.connected}><Check size={14} /> Friends</span> : customer.relationship === "REQUEST_SENT" ? <span className={styles.pending}><Clock3 size={14} /> Request sent</span> : customer.relationship === "REQUEST_RECEIVED" ? <button className={styles.outline} onClick={() => window.location.assign("/friends")}>Review request</button> : <button className={styles.primary} disabled={busy === key("friend-request")} onClick={() => onAction({ action: "friend-request", targetUserId: customer.id })}><UserPlus size={15} /> Add friend</button>}<button className={customer.following ? styles.following : styles.outline} disabled={busy === key(customer.following ? "unfollow" : "follow")} onClick={() => onAction({ action: customer.following ? "unfollow" : "follow", targetUserId: customer.id })}>{customer.following ? "Following" : "Follow"}</button><button className={styles.iconDanger} aria-label={`Block ${customer.displayName}`} onClick={() => onAction({ action: "block", targetUserId: customer.id })}><Shield size={14} /></button></div></article>;
+  return <article className={styles.card}><CustomerIdentity customer={customer} /><div className={styles.cardActions}><Link className={styles.outline} href={`/customers/${customer.username}`}>Profile</Link>{customer.relationship === "FRIENDS" ? <span className={styles.connected}><Check size={14} /> Friends</span> : customer.relationship === "REQUEST_SENT" ? <span className={styles.pending}><Clock3 size={14} /> Request sent</span> : customer.relationship === "REQUEST_RECEIVED" ? <button className={styles.outline} onClick={() => window.location.assign("/friends")}>Review request</button> : <button className={styles.primary} disabled={busy === key("friend-request")} onClick={() => onAction({ action: "friend-request", targetUserId: customer.id })}><UserPlus size={15} /> Add friend</button>}<button className={customer.following ? styles.following : styles.outline} disabled={busy === key(customer.following ? "unfollow" : "follow")} onClick={() => onAction({ action: customer.following ? "unfollow" : "follow", targetUserId: customer.id })}>{customer.following ? "Following" : "Follow"}</button><button className={styles.iconDanger} aria-label={`Block ${customer.displayName}`} onClick={() => { if (window.confirm(`Block ${customer.displayName}? They will no longer be able to find or connect with you.`)) onAction({ action: "block", targetUserId: customer.id }); }}><Shield size={14} /></button></div></article>;
 }
 
 function PrivacyToggle({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (value: boolean) => void }) {
