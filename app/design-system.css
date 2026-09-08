@@ -1,0 +1,174 @@
+:root{
+  --fb-forest:#24453b;
+  --fb-forest-2:#315c4d;
+  --fb-moss:#6f8f63;
+  --fb-sage:#e8f0e3;
+  --fb-cream:#fcfaf5;
+  --fb-surface:#ffffff;
+  --fb-ink:#1f2d28;
+  --fb-muted:#68766f;
+  --fb-line:#dfe7df;
+  --fb-gold:#e8b84f;
+  --fb-coral:#d9654b;
+  --fb-danger:#b84e45;
+  --fb-success:#3f7a58;
+  --fb-info:#4d7182;
+  --fb-radius-sm:8px;
+  --fb-radius-md:14px;
+  --fb-radius-lg:20px;
+  --fb-shadow-sm:0 2px 10px rgba(31,45,40,.05);
+  --fb-shadow-md:0 12px 32px rgba(31,45,40,.08);
+  --fb-shadow-lg:0 22px 60px rgba(31,45,40,.13);
+  --fb-space-1:4px;
+  --fb-space-2:8px;
+  --fb-space-3:12px;
+  --fb-space-4:16px;
+  --fb-space-5:20px;
+  --fb-space-6:24px;
+  --fb-space-7:32px;
+  --fb-space-8:40px;
+}
+
+html{scroll-behavior:smooth}
+body{background:var(--fb-cream);color:var(--fb-ink);letter-spacing:-.01em}
+button,input,textarea,select{font-family:var(--sans),system-ui,sans-serif}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid rgba(232,184,79,.42);outline-offset:3px}
+
+/* Brand system: a simple bowl/bookmark monogram that remains legible at 24px. */
+.fb-brand-link{display:inline-flex;text-decoration:none;color:inherit}
+.fb-brand{display:inline-flex;align-items:center;gap:10px;color:var(--fb-forest);text-decoration:none}
+.fb-brand__mark{width:34px;height:34px;border-radius:11px 11px 11px 4px;background:var(--fb-forest);color:#fff;display:grid;place-items:center;box-shadow:0 5px 14px rgba(36,69,59,.16);flex:none}
+.fb-brand__mark svg{width:25px;height:25px}
+.fb-brand__wordmark{font-family:var(--sans);font-size:20px;font-weight:800;letter-spacing:-.055em}
+.fb-brand__wordmark span{color:var(--fb-coral);font-weight:800}
+.fb-brand--compact .fb-brand__mark{width:30px;height:30px}
+.fb-brand--inverse{color:#fff}
+.fb-brand--inverse .fb-brand__mark{background:#fff;color:var(--fb-forest)}
+
+/* Upgrade the existing shared logo without breaking legacy markup. */
+.brand{color:var(--fb-forest)!important;gap:10px!important}
+.brand .brand-mark{width:34px!important;height:34px!important;border-radius:11px 11px 11px 4px!important;background:var(--fb-forest)!important;color:#fff!important;font-size:0!important;position:relative;box-shadow:0 5px 14px rgba(36,69,59,.14)}
+.brand .brand-mark:before{content:"";width:18px;height:14px;border:3px solid currentColor;border-top:0;border-radius:0 0 12px 12px;position:absolute;left:8px;top:9px;transform:rotate(-2deg)}
+.brand .brand-mark:after{content:"";width:7px;height:7px;border-radius:50%;background:var(--fb-gold);position:absolute;right:7px;top:6px}
+.brand-accent{color:var(--fb-coral)!important}
+
+.topbar{height:72px;background:rgba(252,250,245,.9);border-bottom:1px solid var(--fb-line);box-shadow:0 1px 0 rgba(31,45,40,.02)}
+.topbar-inner{max-width:1280px;padding:0 24px;gap:38px}
+.top-search{height:42px;background:#f0f4ee;border:1px solid transparent;border-radius:999px;max-width:440px;transition:.18s ease}
+.top-search:focus-within{background:#fff;border-color:#cbd9ca;box-shadow:0 0 0 4px rgba(111,143,99,.09)}
+.header-actions{gap:10px}
+.icon-button{width:40px;height:40px;border-radius:50%;display:grid;place-items:center}
+.icon-button:hover{background:#edf3ea;color:var(--fb-forest)}
+.avatar{background:#dce9d5;color:var(--fb-forest-2);font-weight:800}
+
+.page-grid{max-width:1280px;grid-template-columns:220px minmax(0,1fr) 270px;gap:34px;padding:34px 24px 72px}
+.sidebar{top:102px}
+.nav-button{border-radius:10px;padding:11px 12px;transition:.16s ease}
+.nav-button:hover{background:#eef4eb}
+.nav-button.active{background:var(--fb-sage);color:var(--fb-forest);box-shadow:inset 3px 0 0 var(--fb-forest)}
+.sidebar-rule{margin:24px 10px 18px;background:var(--fb-line)}
+.owner-link{border-radius:12px;padding:12px 10px;background:#fff;border:1px solid var(--fb-line);box-shadow:var(--fb-shadow-sm)}
+.owner-link:hover{background:#fff;transform:translateY(-1px);box-shadow:var(--fb-shadow-md)}
+.owner-icon{background:#faece7;color:var(--fb-coral)}
+
+.welcome-row h1,.section-heading h1{font-size:clamp(38px,4.4vw,52px);letter-spacing:-.045em}
+.eyebrow{color:var(--fb-moss);letter-spacing:.17em}
+.intro,.section-heading p{color:var(--fb-muted)}
+.primary-button{background:var(--fb-forest);border-radius:999px;padding:11px 17px;box-shadow:0 6px 16px rgba(36,69,59,.14);transition:.16s ease}
+.primary-button:hover{background:#1b3930;transform:translateY(-1px)}
+
+.feature-band{background:linear-gradient(135deg,#e7f0df 0%,#edf3e8 70%,#f8f1df 100%);border-radius:18px;min-height:235px;box-shadow:var(--fb-shadow-sm)}
+.feature-band h2{font-size:36px}
+.feature-image{min-height:235px}
+.feature-image img{filter:saturate(.96)}
+.post-card,.rail-card,.restaurant-card{border-color:var(--fb-line);border-radius:14px;box-shadow:var(--fb-shadow-sm);transition:transform .18s ease,box-shadow .18s ease}
+.post-card:hover,.restaurant-card:hover{transform:translateY(-2px);box-shadow:var(--fb-shadow-md)}
+.post-photo{border-radius:10px}
+.restaurant-photo{height:175px}
+.restaurant-card{overflow:hidden}
+.restaurant-details{padding:16px}
+.tag-row span{border-radius:999px;background:#eef3eb}
+.follow-button,.following{border-radius:999px}
+
+.modal-backdrop{background:rgba(24,39,33,.56);backdrop-filter:blur(5px)}
+.composer{border:1px solid var(--fb-line);border-radius:18px;box-shadow:var(--fb-shadow-lg)}
+.composer textarea{border-radius:10px}
+.toast{border-radius:999px;box-shadow:var(--fb-shadow-md)}
+
+/* Account/auth */
+.auth-page{background:var(--fb-cream)}
+.auth-art{background:radial-gradient(circle at 85% 20%,rgba(232,184,79,.22),transparent 25%),linear-gradient(145deg,#e6efe0,#f2f3e9);padding:32px 7vw}
+.auth-art:before{content:"";position:absolute;width:260px;height:260px;border:1px solid rgba(36,69,59,.12);border-radius:50%;left:-120px;top:18%;box-shadow:120px 40px 0 -119px rgba(36,69,59,.08)}
+.auth-art:after{border-color:#b8cdb0}
+.auth-art-copy h1{font-size:clamp(52px,5.8vw,82px)}
+.auth-panel{background:#fff}
+.auth-form-wrap{width:min(410px,100%)}
+.auth-form-wrap input,.settings-form input,.settings-form textarea{min-height:44px;border-radius:10px;border-color:var(--fb-line);transition:.18s ease}
+.auth-form-wrap input:focus,.settings-form input:focus,.settings-form textarea:focus{border-color:var(--fb-moss);box-shadow:0 0 0 4px rgba(111,143,99,.1)}
+.role-picker{border-radius:14px!important;background:#f7f8f4!important;border-color:var(--fb-line)!important}
+.role-option{border-radius:10px!important;padding:13px 14px!important}
+.role-option.selected{border-color:var(--fb-moss)!important;background:#edf5e9!important}
+.btn{border-radius:999px!important;background:var(--fb-forest)!important;box-shadow:0 7px 18px rgba(36,69,59,.14)}
+.form-message{border-radius:10px}
+
+/* Customer community */
+.page{background:var(--fb-cream)!important}
+.tabs{gap:7px}
+.tabs button{border-radius:10px 10px 0 0;transition:.16s ease}
+.tabs button:hover{background:#eef4eb}
+.tabs .active{color:var(--fb-forest)!important;border-bottom-color:var(--fb-forest)!important}
+.search{height:48px;border-radius:999px;border:1px solid transparent}
+.search:focus-within{background:#fff;border-color:#cbd9ca;box-shadow:0 0 0 4px rgba(111,143,99,.09)}
+.card,.row,.privacy,.me{border-color:var(--fb-line)!important;border-radius:14px!important;box-shadow:var(--fb-shadow-sm)}
+.card{transition:.18s ease}
+.card:hover{transform:translateY(-2px);box-shadow:var(--fb-shadow-md)}
+.primary{background:var(--fb-forest)!important;border-radius:999px!important}
+.outline,.following,.danger{border-radius:999px!important}
+.switch{background:#ccd6ce}
+.toggle input:checked~.switch{background:var(--fb-forest)}
+.safety{background:#eef4eb}
+
+/* Owner studio */
+.owner-shell{background:var(--fb-cream)!important}
+.owner-sidebar{background:rgba(255,255,255,.96);border-right-color:var(--fb-line);padding:24px 16px 18px}
+.owner-brand-row{padding-bottom:38px}
+.owner-nav button,.owner-side-link{border-radius:10px}
+.owner-nav button:hover,.owner-nav button.active,.owner-side-link:hover{background:#edf4e9;color:var(--fb-forest)}
+.owner-nav button.active{box-shadow:inset 3px 0 0 var(--fb-forest)}
+.owner-topbar{height:92px;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom-color:var(--fb-line)}
+.owner-content{max-width:1200px;padding-top:34px}
+.owner-restaurant-card,.owner-stat,.owner-activity-card,.owner-notification,.owner-form,.owner-onboarding,.owner-review,.owner-photo-grid div,.owner-post-list article,.owner-settings-grid>div,.owner-placeholder,.owner-menu-form,.owner-category{border-color:var(--fb-line);box-shadow:var(--fb-shadow-sm)}
+.owner-restaurant-card,.owner-onboarding{border-radius:18px}
+.owner-stat,.owner-activity-card,.owner-notification,.owner-review,.owner-photo-grid div,.owner-post-list article,.owner-settings-grid>div,.owner-placeholder,.owner-menu-form,.owner-category{border-radius:14px}
+.owner-restaurant-card:hover,.owner-stat:hover{box-shadow:var(--fb-shadow-md)}
+.owner-status,.owner-pill{background:#eaf3e6;color:var(--fb-forest);border-radius:999px}
+.owner-primary-button,.owner-card-actions .primary-button{background:var(--fb-forest)}
+.owner-activity-icon,.owner-restaurant-mark,.owner-onboarding-icon{background:#edf4e9;color:var(--fb-forest)}
+.owner-field input,.owner-field textarea,.claim-form select,.claim-form textarea,.owner-reply textarea{min-height:44px;border-radius:10px;border-color:var(--fb-line)}
+.owner-menu-item{padding:17px 0}
+.owner-menu-item-image{border-radius:10px}
+
+@media(max-width:1050px){
+  .page-grid{grid-template-columns:190px minmax(0,1fr);gap:26px}
+}
+@media(max-width:700px){
+  .topbar{height:64px}
+  .topbar-inner{padding:0 14px}
+  .brand .brand-mark{width:30px!important;height:30px!important}
+  .top-search{top:70px;height:44px}
+  .page-grid{padding:24px 15px 48px}
+  .content{padding-top:22px}
+  .feature-band{border-radius:15px}
+  .feature-band h2{font-size:31px}
+  .post-card,.restaurant-card{border-radius:13px}
+  .mobile-nav{height:68px;background:rgba(255,255,255,.96);border-top-color:var(--fb-line);box-shadow:0 -8px 24px rgba(31,45,40,.05)}
+  .mobile-nav .nav-button.active{color:var(--fb-forest)}
+  .auth-art{min-height:300px}
+  .auth-panel{padding:34px 20px 48px}
+  .auth-form-wrap h2{font-size:34px}
+  .tabs{padding-bottom:2px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .grid{gap:12px}
+  .card-actions{gap:6px}
+  .owner-content{padding:24px 18px 60px}
+}
