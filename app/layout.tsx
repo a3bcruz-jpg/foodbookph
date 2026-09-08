@@ -7,6 +7,7 @@ import "./restaurant.css";
 import "./navigation-fix.css";
 import "./design-system.css";
 import "./screen-refresh.css";
+import "./foodbookph-brand.css";
 
 export const metadata: Metadata = {
   title: "FoodBookPH | Discover food. Meet your food people.",
