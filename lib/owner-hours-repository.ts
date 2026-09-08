@@ -1,12 +1,6 @@
 import { getPrisma } from "@/lib/prisma";
 
-export type OwnerHourInput = {
-  dayOfWeek: number;
-  isClosed: boolean;
-  openTime?: string | null;
-  closeTime?: string | null;
-};
-
+export type OwnerHourInput = { dayOfWeek: number; isClosed: boolean; openTime?: string | null; closeTime?: string | null };
 const validDays = new Set([0, 1, 2, 3, 4, 5, 6]);
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -21,13 +15,7 @@ function validateHour(input: OwnerHourInput) {
 async function ownedRestaurant(userId: string, restaurantId?: string) {
   const prisma = getPrisma();
   if (!prisma) return null;
-  return prisma.restaurant.findFirst({
-    where: {
-      ...(restaurantId ? { id: restaurantId } : {}),
-      memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } },
-    },
-    select: { id: true },
-  });
+  return prisma.restaurant.findFirst({ where: { ...(restaurantId ? { id: restaurantId } : {}), memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } }, select: { id: true, name: true } });
 }
 
 export async function getOwnerHours(userId: string) {
@@ -36,7 +24,7 @@ export async function getOwnerHours(userId: string) {
   const restaurant = await ownedRestaurant(userId);
   if (!restaurant) return null;
   const hours = await prisma.restaurantHours.findMany({ where: { restaurantId: restaurant.id }, orderBy: { dayOfWeek: "asc" } });
-  return { restaurantId: restaurant.id, hours };
+  return { restaurantId: restaurant.id, restaurantName: restaurant.name, hours };
 }
 
 export async function saveOwnerHours(userId: string, restaurantId: string, input: OwnerHourInput[]) {
@@ -54,11 +42,7 @@ export async function saveOwnerHours(userId: string, restaurantId: string, input
   }
   return prisma.$transaction(async (transaction) => {
     for (const day of input) {
-      await transaction.restaurantHours.upsert({
-        where: { restaurantId_dayOfWeek: { restaurantId: restaurant.id, dayOfWeek: day.dayOfWeek } },
-        update: { isClosed: day.isClosed, openTime: day.isClosed ? null : day.openTime, closeTime: day.isClosed ? null : day.closeTime },
-        create: { restaurantId: restaurant.id, dayOfWeek: day.dayOfWeek, isClosed: day.isClosed, openTime: day.isClosed ? null : day.openTime, closeTime: day.isClosed ? null : day.closeTime },
-      });
+      await transaction.restaurantHours.upsert({ where: { restaurantId_dayOfWeek: { restaurantId: restaurant.id, dayOfWeek: day.dayOfWeek } }, update: { isClosed: day.isClosed, openTime: day.isClosed ? null : day.openTime, closeTime: day.isClosed ? null : day.closeTime }, create: { restaurantId: restaurant.id, dayOfWeek: day.dayOfWeek, isClosed: day.isClosed, openTime: day.isClosed ? null : day.openTime, closeTime: day.isClosed ? null : day.closeTime } });
     }
     return transaction.restaurantHours.findMany({ where: { restaurantId: restaurant.id }, orderBy: { dayOfWeek: "asc" } });
   });
