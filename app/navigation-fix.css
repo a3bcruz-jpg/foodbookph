@@ -1,0 +1,39 @@
+/* Navigation labels: keep the function name visible beside each icon. */
+.sidebar nav .nav-button {
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  gap: 13px;
+  color: #77827e !important;
+  padding: 11px 13px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 13px !important;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sidebar nav .nav-button svg {
+  flex: 0 0 auto;
+}
+
+.sidebar nav .nav-button.active {
+  color: var(--leaf-dark) !important;
+  background: #e9f1e5;
+  font-weight: 700;
+}
+
+.sidebar nav .nav-button:hover {
+  background: #f0f4ed;
+}
+
+.mobile-nav .nav-button {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 9px !important;
+  line-height: 1.1;
+  white-space: nowrap;
+}
