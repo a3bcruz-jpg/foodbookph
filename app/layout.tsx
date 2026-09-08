@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./design-system.css";
 import "./account.css";
 import "./owner.css";
 import "./owner-menu.css";
@@ -7,8 +8,10 @@ import "./restaurant.css";
 import "./navigation-fix.css";
 
 export const metadata: Metadata = {
-  title: "FoodBookPH | Find your next favorite",
-  description: "Discover the places and plates worth talking about in the Philippines.",
+  title: "FoodBookPH | Discover food. Meet your food people.",
+  description: "Discover the places, plates, reviews, and people worth talking about across the Philippines.",
+  applicationName: "FoodBookPH",
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
