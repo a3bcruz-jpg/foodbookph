@@ -6,6 +6,11 @@ import { getPrisma } from "@/lib/prisma";
 const ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 5 * 1024 * 1024;
 
+type UploadTokenPayload = {
+  accountId: string;
+  restaurantId: string;
+};
+
 export async function POST(request: Request) {
   const account = await getCurrentAccount();
   if (!account) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
@@ -55,9 +60,18 @@ export async function POST(request: Request) {
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
+        if (!tokenPayload) {
+          console.error("FoodBookPH menu image upload completed without token payload", {
+            pathname: blob.pathname,
+          });
+          return;
+        }
+
+        const payload = JSON.parse(tokenPayload) as UploadTokenPayload;
         console.info("FoodBookPH menu image uploaded", {
           pathname: blob.pathname,
-          accountId: JSON.parse(tokenPayload).accountId,
+          accountId: payload.accountId,
+          restaurantId: payload.restaurantId,
         });
       },
     });
