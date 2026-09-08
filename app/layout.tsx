@@ -4,6 +4,7 @@ import "./account.css";
 import "./owner.css";
 import "./owner-menu.css";
 import "./restaurant.css";
+import "./navigation-fix.css";
 
 export const metadata: Metadata = {
   title: "FoodBookPH | Find your next favorite",
