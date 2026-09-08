@@ -107,8 +107,20 @@ model Restaurant {
   posts Post[]
   follows Follow[]
   reviews Review[]
+  hours RestaurantHours[]
   @@index([name])
   @@index([city, cuisine])
+}
+model RestaurantHours {
+  id String @id @default(cuid())
+  restaurantId String
+  dayOfWeek Int
+  isClosed Boolean @default(false)
+  openTime String?
+  closeTime String?
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  @@unique([restaurantId, dayOfWeek])
+  @@index([restaurantId, dayOfWeek])
 }
 model RestaurantClaim {
   id String @id @default(cuid())
