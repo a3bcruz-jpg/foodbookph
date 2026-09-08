@@ -7,42 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  CUSTOMER
-  RESTAURANT_OWNER
-  ADMIN
-}
-enum ClaimStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-enum MembershipRole {
-  OWNER
-  MANAGER
-  STAFF
-}
-enum ReportStatus {
-  OPEN
-  REVIEWED
-  RESOLVED
-  DISMISSED
-}
-enum AccountStatus {
-  ACTIVE
-  SUSPENDED
-}
-enum FriendRequestStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  CANCELED
-}
-enum ProfileVisibility {
-  PUBLIC
-  CONNECTIONS
-  PRIVATE
-}
+enum Role { CUSTOMER RESTAURANT_OWNER ADMIN }
+enum ClaimStatus { PENDING APPROVED REJECTED }
+enum MembershipRole { OWNER MANAGER STAFF }
+enum ReportStatus { OPEN REVIEWED RESOLVED DISMISSED }
+enum AccountStatus { ACTIVE SUSPENDED }
+enum FriendRequestStatus { PENDING ACCEPTED DECLINED CANCELED }
+enum ProfileVisibility { PUBLIC CONNECTIONS PRIVATE }
 
 model User {
   id String @id @default(cuid())
@@ -290,6 +261,7 @@ model SavedPost {
   postId String
   createdAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@unique([userId, postId])
   @@index([userId, createdAt])
 }
@@ -325,7 +297,7 @@ model Review {
   @@index([restaurantId, createdAt])
 }
 model ReviewResponse {
-  id String @id @unique
+  id String @id @default(cuid())
   reviewId String @unique
   ownerId String
   body String
