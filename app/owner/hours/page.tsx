@@ -9,5 +9,5 @@ export default async function OwnerHoursPage() {
   if (!account.roles.includes("RESTAURANT_OWNER") && !account.roles.includes("ADMIN")) redirect("/profile");
   const data = await getOwnerHours(account.id);
   if (!data) redirect("/owner");
-  return <main style={{ minHeight: "100vh", padding: "48px 28px", background: "#fbfcfa" }}><OwnerHours restaurantId={data.restaurantId} restaurantName="Your restaurant" initialHours={data.hours.map((hour) => ({ dayOfWeek: hour.dayOfWeek, isClosed: hour.isClosed, openTime: hour.openTime, closeTime: hour.closeTime }))} /></main>;
+  return <main style={{ minHeight: "100vh", padding: "48px 28px", background: "#fbfcfa" }}><OwnerHours restaurantId={data.restaurantId} restaurantName={data.restaurantName} initialHours={data.hours.map((hour) => ({ dayOfWeek: hour.dayOfWeek, isClosed: hour.isClosed, openTime: hour.openTime, closeTime: hour.closeTime }))} /></main>;
 }
