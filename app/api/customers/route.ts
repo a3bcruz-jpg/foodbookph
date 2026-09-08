@@ -15,7 +15,7 @@ export async function GET(request: Request) {
         id: { not: current!.id },
         status: "ACTIVE",
         roles: { some: { role: "CUSTOMER" } },
-        privacy: { is: { discoverable: true, profileVisibility: { not: "PRIVATE" } } },
+        privacy: { is: { discoverable: true, profileVisibility: "PUBLIC" } },
         ...(q ? { OR: [
           { displayName: { contains: q, mode: "insensitive" } },
           { username: { contains: q.replace(/^@/, ""), mode: "insensitive" } },
@@ -32,28 +32,16 @@ export async function GET(request: Request) {
 
     const ids = users.map((user) => user.id);
     const [requests, friendships, follows] = await Promise.all([
-      prisma.friendRequest.findMany({
-        where: { OR: [{ senderId: current!.id, receiverId: { in: ids } }, { receiverId: current!.id, senderId: { in: ids } }] },
-        select: { id: true, senderId: true, receiverId: true, status: true },
-      }),
-      prisma.friendship.findMany({
-        where: { OR: [{ userAId: current!.id, userBId: { in: ids } }, { userBId: current!.id, userAId: { in: ids } }] },
-        select: { userAId: true, userBId: true },
-      }),
+      prisma.friendRequest.findMany({ where: { OR: [{ senderId: current!.id, receiverId: { in: ids } }, { receiverId: current!.id, senderId: { in: ids } }] }, select: { id: true, senderId: true, receiverId: true, status: true } }),
+      prisma.friendship.findMany({ where: { OR: [{ userAId: current!.id, userBId: { in: ids } }, { userBId: current!.id, userAId: { in: ids } }] }, select: { userAId: true, userBId: true } }),
       prisma.userFollow.findMany({ where: { followerId: current!.id, followedId: { in: ids } }, select: { followedId: true } }),
     ]);
 
-    return NextResponse.json({
-      customers: users.map((user) => {
-        const request = requests.find((item) => item.senderId === user.id || item.receiverId === user.id);
-        const friends = friendships.some((item) => item.userAId === user.id || item.userBId === user.id);
-        return {
-          ...publicCustomer(user),
-          relationship: friends ? "FRIENDS" : request?.status === "PENDING" ? (request.senderId === current!.id ? "REQUEST_SENT" : "REQUEST_RECEIVED") : "NONE",
-          following: follows.some((item) => item.followedId === user.id),
-        };
-      }),
-    });
+    return NextResponse.json({ customers: users.map((user) => {
+      const request = requests.find((item) => item.senderId === user.id || item.receiverId === user.id);
+      const friends = friendships.some((item) => item.userAId === user.id || item.userBId === user.id);
+      return { ...publicCustomer(user), relationship: friends ? "FRIENDS" : request?.status === "PENDING" ? (request.senderId === current!.id ? "REQUEST_SENT" : "REQUEST_RECEIVED") : "NONE", following: follows.some((item) => item.followedId === user.id) };
+    }) });
   } catch (error) {
     const code = error instanceof Error ? error.message : "UNKNOWN";
     const status = code === "AUTH_REQUIRED" ? 401 : code === "CUSTOMER_ONLY" ? 403 : 503;
