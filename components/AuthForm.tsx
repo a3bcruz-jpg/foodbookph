@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { Brand } from "@/components/Brand";
 
 export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "register"; audience?: "customer" | "owner" }) {
   const router = useRouter();
@@ -47,9 +48,8 @@ export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "reg
   return (
     <main className="auth-page">
       <div className="auth-art">
-        <button className="brand auth-brand" onClick={() => router.push("/")}>
-          <span className="brand-mark">F</span>
-          <span>foodbook<span className="brand-accent">PH</span></span>
+        <button className="auth-brand" onClick={() => router.push("/")} aria-label="FoodBookPH home">
+          <Brand href={undefined} />
         </button>
         <div className="auth-art-copy">
           <span className="eyebrow">THE LOCAL TABLE</span>
@@ -70,85 +70,43 @@ export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "reg
               <>
                 <label>
                   Display name
-                  <input
-                    required
-                    minLength={2}
-                    maxLength={60}
-                    value={values.displayName}
-                    onChange={(event) => setValues({ ...values, displayName: event.target.value })}
-                    placeholder="Alex Cruz"
-                  />
+                  <input required minLength={2} maxLength={60} value={values.displayName} onChange={(event) => setValues({ ...values, displayName: event.target.value })} placeholder="Alex Cruz" />
                 </label>
-
                 <label>
                   Username
                   <div className="input-prefix">
                     <span>@</span>
-                    <input
-                      required
-                      value={values.username}
-                      onChange={(event) => setValues({ ...values, username: event.target.value.replace(/^@/, "") })}
-                      placeholder="alexcruz"
-                    />
+                    <input required value={values.username} onChange={(event) => setValues({ ...values, username: event.target.value.replace(/^@/, "") })} placeholder="alexcruz" />
                   </div>
                 </label>
-
                 <div className="role-picker" aria-label="How will you use FoodBookPH?">
                   <p className="role-picker-title">How will you use FoodBookPH?</p>
                   <div className="role-options">
                     <label className={values.role === "CUSTOMER" ? "role-option selected" : "role-option"}>
-                      <input
-                        type="radio"
-                        name="role"
-                        checked={values.role === "CUSTOMER"}
-                        onChange={() => setValues({ ...values, role: "CUSTOMER" })}
-                      />
+                      <input type="radio" name="role" checked={values.role === "CUSTOMER"} onChange={() => setValues({ ...values, role: "CUSTOMER" })} />
                       <span>I am a Customer</span>
                     </label>
                     <label className={values.role === "RESTAURANT_OWNER" ? "role-option selected" : "role-option"}>
-                      <input
-                        type="radio"
-                        name="role"
-                        checked={values.role === "RESTAURANT_OWNER"}
-                        onChange={() => setValues({ ...values, role: "RESTAURANT_OWNER" })}
-                      />
+                      <input type="radio" name="role" checked={values.role === "RESTAURANT_OWNER"} onChange={() => setValues({ ...values, role: "RESTAURANT_OWNER" })} />
                       <span>I am a Restaurant Owner</span>
                     </label>
                   </div>
                 </div>
               </>
             )}
-
             <label>
               Email
-              <input
-                type="email"
-                required
-                value={values.email}
-                onChange={(event) => setValues({ ...values, email: event.target.value })}
-                placeholder="you@example.com"
-              />
+              <input type="email" required value={values.email} onChange={(event) => setValues({ ...values, email: event.target.value })} placeholder="you@example.com" />
             </label>
-
             <label>
               Password
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={values.password}
-                onChange={(event) => setValues({ ...values, password: event.target.value })}
-                placeholder={isRegister ? "8+ characters, upper, lower, number" : "Your password"}
-              />
+              <input type="password" required minLength={8} value={values.password} onChange={(event) => setValues({ ...values, password: event.target.value })} placeholder={isRegister ? "8+ characters, upper, lower, number" : "Your password"} />
             </label>
-
             {error && <div className="form-message error" role="alert">{error}</div>}
             {success && <div className="form-message success" role="status">{success}</div>}
-
             <button className="btn auth-submit" type="submit" disabled={loading}>
               {loading ? (isRegister ? "Creating account..." : "Signing in...") : (isRegister ? "Create account" : "Sign in")}
             </button>
-
             <p className="inline-link">
               {isRegister ? "Already have an account?" : "Need an account?"}
               <Link href={isRegister ? "/login" : "/register"}>{isRegister ? "Sign in" : "Create one"}</Link>
