@@ -1,4 +1,4 @@
-/* Navigation labels: keep the function name visible beside each icon. */
+/* Navigation labels: show the function name beside every sidebar icon. */
 .sidebar nav .nav-button {
   width: 100%;
   display: flex !important;
@@ -16,6 +16,21 @@
 .sidebar nav .nav-button svg {
   flex: 0 0 auto;
 }
+
+/* NavButton currently receives a label prop but does not render the text node.
+   Use the button position as a safe presentation fallback until the component
+   is updated to render the label directly. */
+.sidebar nav .nav-button::after {
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: inherit;
+}
+
+.sidebar nav .nav-button:nth-child(1)::after { content: "Home"; }
+.sidebar nav .nav-button:nth-child(2)::after { content: "Discover"; }
+.sidebar nav .nav-button:nth-child(3)::after { content: "Restaurants"; }
+.sidebar nav .nav-button:nth-child(4)::after { content: "Food feed"; }
+.sidebar nav .nav-button:nth-child(5)::after { content: "Profile"; }
 
 .sidebar nav .nav-button.active {
   color: var(--leaf-dark) !important;
@@ -37,3 +52,15 @@
   line-height: 1.1;
   white-space: nowrap;
 }
+
+.mobile-nav .nav-button::after {
+  font-size: 9px;
+  line-height: 1.1;
+  font-weight: inherit;
+}
+
+.mobile-nav .nav-button:nth-child(1)::after { content: "Home"; }
+.mobile-nav .nav-button:nth-child(2)::after { content: "Discover"; }
+.mobile-nav .nav-button:nth-child(3)::after { content: "Restaurants"; }
+.mobile-nav .nav-button:nth-child(4)::after { content: "Food"; }
+.mobile-nav .nav-button:nth-child(5)::after { content: "Profile"; }
