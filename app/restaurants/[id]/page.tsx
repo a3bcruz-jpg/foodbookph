@@ -34,7 +34,10 @@ export default async function RestaurantPage({ params }: { params: Promise<{ id:
             <div className="public-menu-items">
               {category.items.map((item) => (
                 <article className="public-menu-item" key={item.id}>
-                  <div>
+                  {item.imageUrl && (
+                    <img className="public-menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />
+                  )}
+                  <div className="public-menu-item-copy">
                     <h4>{item.name}</h4>
                     {item.description && <p>{item.description}</p>}
                   </div>
