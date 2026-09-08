@@ -3,7 +3,8 @@ import { deleteOwnerPost, updateOwnerPost } from "@/lib/owner-repository";
 import { getCurrentAccount } from "@/lib/session";
 
 type Context = { params: Promise<{ id: string }> };
-type OwnerAuth = { account: Awaited<ReturnType<typeof getCurrentAccount>>; response?: never } | { account: null; response: NextResponse };
+type Account = NonNullable<Awaited<ReturnType<typeof getCurrentAccount>>>;
+type OwnerAuth = { account: Account; response?: never } | { account: null; response: NextResponse };
 
 async function ownerAccount(): Promise<OwnerAuth> {
   const account = await getCurrentAccount();
