@@ -7,13 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role { CUSTOMER RESTAURANT_OWNER ADMIN }
-enum ClaimStatus { PENDING APPROVED REJECTED }
-enum MembershipRole { OWNER MANAGER STAFF }
-enum ReportStatus { OPEN REVIEWED RESOLVED DISMISSED }
-enum AccountStatus { ACTIVE SUSPENDED }
-enum FriendRequestStatus { PENDING ACCEPTED DECLINED CANCELED }
-enum ProfileVisibility { PUBLIC CONNECTIONS PRIVATE }
+enum Role {
+  CUSTOMER
+  RESTAURANT_OWNER
+  ADMIN
+}
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+enum MembershipRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELED
+}
+enum ProfileVisibility {
+  PUBLIC
+  CONNECTIONS
+  PRIVATE
+}
 
 model User {
   id String @id @default(cuid())
