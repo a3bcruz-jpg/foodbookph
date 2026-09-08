@@ -25,6 +25,7 @@ export function OwnerMenu({ accountName, restaurantId, initialCategories }: { ac
     const response = await fetch("/api/owner/menu");
     if (response.ok) setCategories((await response.json() as { menu: { categories: Category[] } }).menu.categories);
   }
+
   async function request(url: string, method: string, body?: unknown) {
     setBusy(true); setError(""); setMessage("");
     try {
@@ -34,8 +35,29 @@ export function OwnerMenu({ accountName, restaurantId, initialCategories }: { ac
       await reload(); setMessage("Menu updated successfully."); return true;
     } catch { setError("We could not reach FoodBookPH. Try again."); return false; } finally { setBusy(false); }
   }
-  async function saveCategory(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const body = { name: categoryDraft.name.trim(), description: categoryDraft.description.trim() }; const ok = await request(editingCategory ? `/api/owner/menu/categories/${editingCategory}` : "/api/owner/menu/categories", editingCategory ? "PATCH" : "POST", editingCategory ? { ...body, sortOrder: 0 } : { ...body, restaurantId, sortOrder: categories.length }); if (ok) { setCategoryDraft({ name: "", description: "" }); setEditingCategory(null); setShowCategoryForm(false); } }
-  async function saveItem(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const body = { ...itemDraft, name: itemDraft.name.trim(), description: itemDraft.description.trim(), price: Number(itemDraft.price), sortOrder: Number(itemDraft.sortOrder) || 0 }; const ok = await request(editingItem ? `/api/owner/menu/items/${editingItem}` : "/api/owner/menu/items", editingItem ? "PATCH" : "POST", editingItem ? body : { ...body, restaurantId }); if (ok) { setItemDraft(emptyDraft(categories[0]?.id)); setEditingItem(null); setShowItemForm(false); } }
+
+  async function saveCategory(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const body = { name: categoryDraft.name.trim(), description: categoryDraft.description.trim() };
+    const ok = await request(editingCategory ? `/api/owner/menu/categories/${editingCategory}` : "/api/owner/menu/categories", editingCategory ? "PATCH" : "POST", editingCategory ? { ...body, sortOrder: 0 } : { ...body, restaurantId, sortOrder: categories.length });
+    if (ok) { setCategoryDraft({ name: "", description: "" }); setEditingCategory(null); setShowCategoryForm(false); }
+  }
+
+  async function saveItem(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = itemDraft.name.trim();
+    const price = Number(itemDraft.price);
+    const sortOrder = Number(itemDraft.sortOrder);
+    if (!name) { setError("Menu item name is required."); return; }
+    if (!Number.isFinite(price) || price < 0) { setError("Enter a valid price of ₱0 or more."); return; }
+    if (!itemDraft.categoryId) { setError("Select a menu category."); return; }
+    if (!Number.isInteger(sortOrder) || sortOrder < 0) { setError("Sort order must be a whole number of 0 or more."); return; }
+    if (itemDraft.imageUrl && !/^https?:\/\//i.test(itemDraft.imageUrl.trim())) { setError("Photo URL must start with http:// or https://."); return; }
+    const body = { ...itemDraft, name, description: itemDraft.description.trim(), imageUrl: itemDraft.imageUrl.trim(), price, sortOrder };
+    const ok = await request(editingItem ? `/api/owner/menu/items/${editingItem}` : "/api/owner/menu/items", editingItem ? "PATCH" : "POST", editingItem ? body : { ...body, restaurantId });
+    if (ok) { setItemDraft(emptyDraft(categories[0]?.id)); setEditingItem(null); setShowItemForm(false); }
+  }
+
   function editCategory(category: Category) { setEditingCategory(category.id); setCategoryDraft({ name: category.name, description: category.description ?? "" }); setShowCategoryForm(true); }
   function editItem(item: MenuItem) { setEditingItem(item.id); setItemDraft({ name: item.name, description: item.description ?? "", price: item.price === null ? "" : String(item.price), categoryId: item.menuId, imageUrl: item.imageUrl ?? "", isAvailable: item.isAvailable, sortOrder: String(item.sortOrder) }); setShowItemForm(true); }
 
