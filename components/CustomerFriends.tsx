@@ -16,6 +16,7 @@ export function CustomerFriends({ account }: { account: Account }) {
   const [incoming, setIncoming] = useState<Array<{ id: string; customer: Customer }>>([]);
   const [outgoing, setOutgoing] = useState<Array<{ id: string; customer: Customer }>>([]);
   const [friends, setFriends] = useState<Customer[]>([]);
+  const [blocked, setBlocked] = useState<Customer[]>([]);
   const [privacy, setPrivacy] = useState({ profileVisibility: "PUBLIC", discoverable: true, showActivity: true, allowFriendRequests: true, allowFollows: true });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function CustomerFriends({ account }: { account: Account }) {
     setIncoming(data.incoming ?? []);
     setOutgoing(data.outgoing ?? []);
     setFriends(data.friends ?? []);
+    setBlocked(data.blocked ?? []);
   };
 
   const loadPrivacy = async () => {
@@ -116,6 +118,10 @@ export function CustomerFriends({ account }: { account: Account }) {
         <PrivacyToggle label="Accept friend requests" description="Allow other customers to send you connection requests." checked={privacy.allowFriendRequests} onChange={(value) => savePrivacy({ ...privacy, allowFriendRequests: value })} />
         <PrivacyToggle label="Accept follows" description="Allow other customers to follow your activity." checked={privacy.allowFollows} onChange={(value) => savePrivacy({ ...privacy, allowFollows: value })} />
         <div className={styles.privacyField}><label>Profile visibility</label><select value={privacy.profileVisibility} onChange={(event) => savePrivacy({ ...privacy, profileVisibility: event.target.value })}><option value="PUBLIC">Public</option><option value="CONNECTIONS">Connections only</option><option value="PRIVATE">Private</option></select></div>
+        <div className={styles.divider} />
+        <div><h2>Blocked customers</h2><p>Blocked customers cannot find or connect with you.</p></div>
+        {blocked.map((customer) => <div className={styles.row} key={customer.id}><CustomerIdentity customer={customer} /><button className={styles.outline} onClick={() => action({ action: "unblock", targetUserId: customer.id })}>Unblock</button></div>)}
+        {!blocked.length && <p className={styles.muted}>No blocked customers.</p>}
         <div className={styles.safety}><Lock size={17} /><div><strong>What we never show</strong><p>Your email address, password, session data, or other private account credentials are never part of the public customer profile.</p></div></div>
       </section>}
     </main>
@@ -128,7 +134,7 @@ function CustomerIdentity({ customer }: { customer: Customer }) {
 
 function CustomerCard({ customer, busy, onAction }: { customer: CardCustomer; busy: string | null; onAction: (payload: Record<string, string>) => Promise<void> }) {
   const key = (action: string) => `${action}:${customer.id}`;
-  return <article className={styles.card}><CustomerIdentity customer={customer} /><div className={styles.cardActions}>{customer.relationship === "FRIENDS" ? <span className={styles.connected}><Check size={14} /> Friends</span> : customer.relationship === "REQUEST_SENT" ? <span className={styles.pending}><Clock3 size={14} /> Request sent</span> : customer.relationship === "REQUEST_RECEIVED" ? <button className={styles.primary} disabled={busy === key("accept")} onClick={() => onAction({ action: "friend-request", targetUserId: customer.id })}><UserPlus size={15} /> Connect</button> : <button className={styles.primary} disabled={busy === key("friend-request")} onClick={() => onAction({ action: "friend-request", targetUserId: customer.id })}><UserPlus size={15} /> Add friend</button>}<button className={customer.following ? styles.following : styles.outline} disabled={busy === key(customer.following ? "unfollow" : "follow")} onClick={() => onAction({ action: customer.following ? "unfollow" : "follow", targetUserId: customer.id })}>{customer.following ? "Following" : "Follow"}</button><button className={styles.iconDanger} aria-label={`Block ${customer.displayName}`} onClick={() => onAction({ action: "block", targetUserId: customer.id })}><Shield size={14} /></button></div></article>;
+  return <article className={styles.card}><CustomerIdentity customer={customer} /><div className={styles.cardActions}>{customer.relationship === "FRIENDS" ? <span className={styles.connected}><Check size={14} /> Friends</span> : customer.relationship === "REQUEST_SENT" ? <span className={styles.pending}><Clock3 size={14} /> Request sent</span> : customer.relationship === "REQUEST_RECEIVED" ? <button className={styles.outline} onClick={() => window.location.assign("/friends")}>Review request</button> : <button className={styles.primary} disabled={busy === key("friend-request")} onClick={() => onAction({ action: "friend-request", targetUserId: customer.id })}><UserPlus size={15} /> Add friend</button>}<button className={customer.following ? styles.following : styles.outline} disabled={busy === key(customer.following ? "unfollow" : "follow")} onClick={() => onAction({ action: customer.following ? "unfollow" : "follow", targetUserId: customer.id })}>{customer.following ? "Following" : "Follow"}</button><button className={styles.iconDanger} aria-label={`Block ${customer.displayName}`} onClick={() => onAction({ action: "block", targetUserId: customer.id })}><Shield size={14} /></button></div></article>;
 }
 
 function PrivacyToggle({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (value: boolean) => void }) {
