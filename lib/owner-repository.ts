@@ -180,3 +180,58 @@ export async function deleteMenuItem(userId: string, itemId: string) {
   const result = await prisma.menuItem.deleteMany({ where: { id: itemId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } } });
   return result.count > 0;
 }
+
+export async function getOwnerPosts(userId: string) {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const restaurant = await ownedRestaurant(userId);
+  if (!restaurant) return null;
+  const posts = await prisma.post.findMany({
+    where: { restaurantId: restaurant.id },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+    include: { media: { take: 1 } },
+  });
+  return posts.map((post) => ({ id: post.id, caption: post.caption, createdAt: post.createdAt.toISOString(), image: post.media[0]?.url ?? "" }));
+}
+
+export async function createOwnerPost(userId: string, input: { restaurantId: string; caption: string; image?: string }) {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const restaurant = await ownedRestaurant(userId, input.restaurantId);
+  if (!restaurant) return null;
+  return prisma.post.create({
+    data: {
+      authorId: userId,
+      restaurantId: restaurant.id,
+      caption: input.caption,
+      media: input.image ? { create: { url: input.image } } : undefined,
+    },
+    include: { media: { take: 1 } },
+  });
+}
+
+export async function updateOwnerPost(userId: string, postId: string, caption: string, image: string) {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const post = await prisma.post.findFirst({
+    where: { id: postId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } },
+    select: { id: true },
+  });
+  if (!post) return null;
+  return prisma.$transaction(async (transaction) => {
+    await transaction.postMedia.deleteMany({ where: { postId } });
+    return transaction.post.update({
+      where: { id: postId },
+      data: { caption, media: image ? { create: { url: image } } : undefined },
+      include: { media: { take: 1 } },
+    });
+  });
+}
+
+export async function deleteOwnerPost(userId: string, postId: string) {
+  const prisma = getPrisma();
+  if (!prisma) return false;
+  const result = await prisma.post.deleteMany({ where: { id: postId, restaurant: { memberships: { some: { userId, role: { in: ["OWNER", "MANAGER"] } } } } } });
+  return result.count > 0;
+}
