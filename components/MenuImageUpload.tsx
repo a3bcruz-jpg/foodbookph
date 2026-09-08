@@ -75,6 +75,7 @@ export function MenuImageUpload({ restaurantId, value, onChange }: MenuImageUplo
           disabled={busy}
           aria-hidden="true"
           tabIndex={-1}
+          style={{ display: "none" }}
         />
         {value && <span className="owner-upload-success">Photo ready</span>}
       </div>
