@@ -67,6 +67,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (action === "cancel-request") {
+      if (!body.requestId) return NextResponse.json({ error: "Request id is required." }, { status: 400 });
+      const requestRow = await prisma.friendRequest.findFirst({ where: { id: body.requestId, senderId: current!.id, status: "PENDING" } });
+      if (!requestRow) return NextResponse.json({ error: "Friend request not found." }, { status: 404 });
+      await prisma.friendRequest.update({ where: { id: requestRow.id }, data: { status: "CANCELED" } });
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "remove-friend") {
       if (!targetUserId) return NextResponse.json({ error: "Customer id is required." }, { status: 400 });
       await prisma.friendship.deleteMany({ where: { OR: [{ userAId: current!.id, userBId: targetUserId }, { userAId: targetUserId, userBId: current!.id }] } });
@@ -80,7 +88,10 @@ export async function POST(request: Request) {
         if (!target.privacy?.allowFollows || !target.privacy.discoverable) return NextResponse.json({ error: "This customer does not accept follows." }, { status: 403 });
         const blocked = await prisma.block.findFirst({ where: { OR: [{ blockerId: current!.id, blockedId: target.id }, { blockerId: target.id, blockedId: current!.id }] } });
         if (blocked) return NextResponse.json({ error: "This connection is unavailable." }, { status: 403 });
-        await prisma.userFollow.upsert({ where: { followerId_followedId: { followerId: current!.id, followedId: target.id } }, create: { followerId: current!.id, followedId: target.id }, update: {} });
+        await prisma.$transaction([
+          prisma.userFollow.upsert({ where: { followerId_followedId: { followerId: current!.id, followedId: target.id } }, create: { followerId: current!.id, followedId: target.id }, update: {} }),
+          prisma.notification.create({ data: { userId: target.id, type: "CUSTOMER_FOLLOW", message: `${current!.displayName} started following you.` } }),
+        ]);
       } else await prisma.userFollow.deleteMany({ where: { followerId: current!.id, followedId: target.id } });
       return NextResponse.json({ ok: true });
     }
