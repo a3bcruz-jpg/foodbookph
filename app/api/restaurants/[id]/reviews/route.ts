@@ -7,8 +7,11 @@ function parseServiceRatings(value: unknown): ServiceRatingsInput | null {
   if (value === undefined || value === null) return {};
   if (typeof value !== "object" || Array.isArray(value)) return null;
   const source = value as Record<string, unknown>;
+  const allowed = new Set<string>(SERVICE_RATING_FIELDS);
+  if (Object.keys(source).some((field) => !allowed.has(field))) return null;
   const ratings: ServiceRatingsInput = {};
   for (const field of SERVICE_RATING_FIELDS) {
+    if (!(field in source)) continue;
     const raw = source[field];
     const rating = typeof raw === "number" ? raw : Number(raw);
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) return null;
