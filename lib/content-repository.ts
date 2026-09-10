@@ -18,7 +18,12 @@ export async function listRestaurants(query = "") {
   const prisma = getPrisma();
   if (!prisma) return localRestaurants.filter((item) => `${item.name} ${item.cuisine} ${item.location}`.toLowerCase().includes(query.toLowerCase()));
   const rows = await prisma.restaurant.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { city: { contains: query, mode: "insensitive" } }, { cuisine: { contains: query, mode: "insensitive" } }] } : undefined, orderBy: { name: "asc" }, include: { _count: { select: { reviews: true } } } });
-  return rows.map((restaurant) => ({ id: restaurant.id, name: restaurant.name, cuisine: restaurant.cuisine, location: `${restaurant.address}, ${restaurant.city}`, rating: 0, reviews: restaurant._count.reviews, image: "", accent: "#e6f0d8", price: "₱₱", tags: [], claimed: restaurant.isClaimed }));
+  const restaurantIds = rows.map((restaurant) => restaurant.id);
+  const ratings = restaurantIds.length
+    ? await prisma.review.groupBy({ by: ["restaurantId"], where: { restaurantId: { in: restaurantIds } }, _avg: { rating: true } })
+    : [];
+  const ratingByRestaurant = new Map(ratings.map((item) => [item.restaurantId, item._avg.rating]));
+  return rows.map((restaurant) => ({ id: restaurant.id, name: restaurant.name, cuisine: restaurant.cuisine, location: `${restaurant.address}, ${restaurant.city}`, rating: ratingByRestaurant.get(restaurant.id) ?? 0, reviews: restaurant._count.reviews, image: "", accent: "#e6f0d8", price: "₱₱", tags: [], claimed: restaurant.isClaimed }));
 }
 
 export async function getRestaurant(id: string) {
