@@ -538,8 +538,13 @@ export function FoodBookApp() {
 
 function NavButton({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
   return (
-    <button className={`nav-button ${active ? "active" : ""}`} onClick={onClick}>
+    <button
+      className={`nav-button ${active ? "active" : ""}`}
+      onClick={onClick}
+      aria-current={active ? "page" : undefined}
+    >
       {icon}
+      <span className="nav-button-label">{label}</span>
     </button>
   );
 }
