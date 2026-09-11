@@ -4,6 +4,7 @@ import "./account.css";
 import "./owner.css";
 import "./owner-menu.css";
 import "./restaurant.css";
+import "./service-ratings.css";
 import "./navigation-fix.css";
 import "./design-system.css";
 import "./screen-refresh.css";

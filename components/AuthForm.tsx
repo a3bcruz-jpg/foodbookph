@@ -5,14 +5,17 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { Brand } from "@/components/Brand";
 
+type AuthRole = "CUSTOMER" | "RESTAURANT_OWNER";
+
 export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "register"; audience?: "customer" | "owner" }) {
   const router = useRouter();
+  const initialRole: AuthRole = audience === "owner" ? "RESTAURANT_OWNER" : "CUSTOMER";
   const [values, setValues] = useState({
     email: "",
     password: "",
     username: "",
     displayName: "",
-    role: "CUSTOMER" as "CUSTOMER" | "RESTAURANT_OWNER",
+    role: initialRole,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +39,7 @@ export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "reg
         return;
       }
       setSuccess(isRegister ? "Your FoodBookPH account is ready." : "Welcome back.");
-      const destination = data.account?.roles?.includes("RESTAURANT_OWNER") ? "/owner" : "/profile";
+      const destination = values.role === "RESTAURANT_OWNER" ? "/owner" : "/profile";
       setTimeout(() => router.push(destination), 350);
     } catch {
       setError("We could not reach FoodBookPH. Try again.");
@@ -61,11 +64,25 @@ export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "reg
 
       <section className="auth-panel">
         <div className="auth-form-wrap">
-          <span className="eyebrow">{isRegister ? "JOIN THE COMMUNITY" : audience === "owner" ? "RESTAURANT OWNER LOGIN" : "WELCOME BACK"}</span>
-          <h2>{isRegister ? "Make yourself at home." : audience === "owner" ? "Welcome back to your restaurant." : "Pick up where you left off."}</h2>
-          <p className="auth-subtitle">{isRegister ? "Create one identity for every food story ahead." : audience === "owner" ? "Sign in to manage your place on FoodBookPH." : "Sign in to keep your food circle close."}</p>
+          <span className="eyebrow">{isRegister ? "JOIN FOODBOOKPH" : "WELCOME BACK"}</span>
+          <h2>{isRegister ? "Make yourself at home." : "Pick up where you left off."}</h2>
+          <p className="auth-subtitle">{isRegister ? "Choose the account relationship that matches how you use FoodBookPH." : "Choose how you are signing in so we can take you to the right experience."}</p>
 
           <form onSubmit={submit} noValidate>
+            <div className="role-picker" aria-label="FoodBookPH account type">
+              <p className="role-picker-title">I&apos;m using FoodBookPH as a...</p>
+              <div className="role-options">
+                <label className={values.role === "CUSTOMER" ? "role-option selected" : "role-option"}>
+                  <input type="radio" name="role" checked={values.role === "CUSTOMER"} onChange={() => setValues({ ...values, role: "CUSTOMER" })} />
+                  <span><strong>Customer</strong><small>Discover food, write reviews, and connect with fellow customers.</small></span>
+                </label>
+                <label className={values.role === "RESTAURANT_OWNER" ? "role-option selected" : "role-option"}>
+                  <input type="radio" name="role" checked={values.role === "RESTAURANT_OWNER"} onChange={() => setValues({ ...values, role: "RESTAURANT_OWNER" })} />
+                  <span><strong>Restaurant Owner</strong><small>Manage your restaurant, menu, photos, posts, and reviews.</small></span>
+                </label>
+              </div>
+            </div>
+
             {isRegister && (
               <>
                 <label>
@@ -79,19 +96,6 @@ export function AuthForm({ mode, audience = "customer" }: { mode: "login" | "reg
                     <input required value={values.username} onChange={(event) => setValues({ ...values, username: event.target.value.replace(/^@/, "") })} placeholder="alexcruz" />
                   </div>
                 </label>
-                <div className="role-picker" aria-label="How will you use FoodBookPH?">
-                  <p className="role-picker-title">How will you use FoodBookPH?</p>
-                  <div className="role-options">
-                    <label className={values.role === "CUSTOMER" ? "role-option selected" : "role-option"}>
-                      <input type="radio" name="role" checked={values.role === "CUSTOMER"} onChange={() => setValues({ ...values, role: "CUSTOMER" })} />
-                      <span>I am a Customer</span>
-                    </label>
-                    <label className={values.role === "RESTAURANT_OWNER" ? "role-option selected" : "role-option"}>
-                      <input type="radio" name="role" checked={values.role === "RESTAURANT_OWNER"} onChange={() => setValues({ ...values, role: "RESTAURANT_OWNER" })} />
-                      <span>I am a Restaurant Owner</span>
-                    </label>
-                  </div>
-                </div>
               </>
             )}
             <label>

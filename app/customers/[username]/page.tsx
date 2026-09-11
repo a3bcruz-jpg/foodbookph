@@ -3,15 +3,16 @@ import { redirect } from "next/navigation";
 import { ArrowLeft, Star, Users } from "lucide-react";
 import { getCurrentAccount } from "@/lib/session";
 import { getPrisma } from "@/lib/prisma";
+import { isCustomerAccount } from "@/lib/account-role";
 
 export default async function CustomerProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const account = await getCurrentAccount();
   if (!account) redirect("/login");
-  if (!account.roles.includes("CUSTOMER")) redirect("/owner");
+  if (!isCustomerAccount(account.roles)) redirect("/owner");
   const prisma = getPrisma();
   if (!prisma) redirect("/friends");
   const { username } = await params;
-  const user = await prisma.user.findFirst({ where: { username: username.replace(/^@/, "").toLowerCase(), status: "ACTIVE", roles: { some: { role: "CUSTOMER" } } }, include: { privacy: true } });
+  const user = await prisma.user.findFirst({ where: { username: username.replace(/^@/, "").toLowerCase(), status: "ACTIVE", roles: { some: { role: "CUSTOMER" } }, AND: { roles: { none: { role: "RESTAURANT_OWNER" } } } }, include: { privacy: true } });
   if (!user || !user.privacy?.discoverable || user.privacy.profileVisibility === "PRIVATE") redirect("/friends");
   const isSelf = user.id === account.id;
   const friendship = isSelf || Boolean(await prisma.friendship.findFirst({ where: { OR: [{ userAId: account.id, userBId: user.id }, { userAId: user.id, userBId: account.id }] } }));

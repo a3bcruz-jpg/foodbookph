@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RestaurantReviews } from "@/components/RestaurantReviews";
 import { getRestaurant } from "@/lib/content-repository";
 
 export default async function RestaurantPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,9 +35,7 @@ export default async function RestaurantPage({ params }: { params: Promise<{ id:
             <div className="public-menu-items">
               {category.items.map((item) => (
                 <article className="public-menu-item" key={item.id}>
-                  {item.imageUrl && (
-                    <img className="public-menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />
-                  )}
+                  {item.imageUrl && <img className="public-menu-item-image" src={item.imageUrl} alt={item.name} loading="lazy" />}
                   <div className="public-menu-item-copy">
                     <h4>{item.name}</h4>
                     {item.description && <p>{item.description}</p>}
@@ -48,6 +47,7 @@ export default async function RestaurantPage({ params }: { params: Promise<{ id:
           </section>
         ))}
       </section>
+      <RestaurantReviews restaurantId={id} />
     </main>
   );
 }

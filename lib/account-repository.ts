@@ -9,10 +9,28 @@ const toAccount = (user: { id: string; email: string; username: string; displayN
 export async function registerAccount(input: { email: string; password: string; username: string; displayName: string; role?: "CUSTOMER" | "RESTAURANT_OWNER" }) {
   const prisma = getPrisma();
   if (!prisma) return createAccount(input);
-  const existing = await prisma.user.findFirst({ where: { OR: [{ email: input.email.trim().toLowerCase() }, { username: input.username.trim().toLowerCase().replace(/^@/, "") }] } });
-  if (existing) throw new Error(existing.email === input.email.trim().toLowerCase() ? "An account with that email already exists." : "That username is already taken.");
+  const email = input.email.trim().toLowerCase();
+  const username = input.username.trim().toLowerCase().replace(/^@/, "");
+  const existing = await prisma.user.findFirst({ where: { OR: [{ email }, { username }] } });
+  if (existing) throw new Error(existing.email === email ? "An account with that email already exists." : "That username is already taken.");
   const role = normalizeAccountRole(input.role);
-  const user = await prisma.user.create({ data: { email: input.email.trim().toLowerCase(), username: input.username.trim().toLowerCase().replace(/^@/, ""), displayName: input.displayName.trim(), passwordHash: (await import("@/lib/account-store")).hashPassword(input.password), roles: { create: { role } }, ...(role === "CUSTOMER" ? { privacy: { create: {} } } : {}) }, include: { roles: true } });
+  const passwordHash = (await import("@/lib/account-store")).hashPassword(input.password);
+  const user = await prisma.user.create({
+    data: {
+      email,
+      username,
+      displayName: input.displayName.trim(),
+      passwordHash,
+      roles: { create: { role } },
+      ...(role === "CUSTOMER"
+        ? {
+            privacy: { create: {} },
+            profile: { create: { displayName: input.displayName.trim(), handle: username } },
+          }
+        : {}),
+    },
+    include: { roles: true },
+  });
   return toAccount(user);
 }
 

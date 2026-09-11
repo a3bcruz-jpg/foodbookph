@@ -7,7 +7,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ use
   try {
     const prisma = await requireCustomer(current);
     const { username } = await params;
-    const user = await prisma.user.findFirst({ where: { username: username.replace(/^@/, "").toLowerCase(), status: "ACTIVE", roles: { some: { role: "CUSTOMER" } } }, include: { privacy: true } });
+    const user = await prisma.user.findFirst({ where: { username: username.replace(/^@/, "").toLowerCase(), status: "ACTIVE", roles: { some: { role: "CUSTOMER" } }, AND: { roles: { none: { role: "RESTAURANT_OWNER" } } } }, include: { privacy: true } });
     if (!user) return NextResponse.json({ error: "Customer not found." }, { status: 404 });
 
     const [blocked, friendship] = await Promise.all([
